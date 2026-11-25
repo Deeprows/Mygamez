@@ -163,7 +163,11 @@ applyCar();
 const menu = initMenu(S, { cars: CARS, onUpgrade: () => refreshGarage() });
 
 function showMenuPage(page) {
-  for (const el of document.querySelectorAll('.menu-page')) el.classList.toggle('active', el.id === 'page-' + page);
+  for (const el of document.querySelectorAll('.menu-page')) {
+    const selected = el.id === 'page-' + page;
+    el.classList.toggle('active', selected);
+    el.classList.toggle('hidden', !selected);
+  }
   for (const b of document.querySelectorAll('#menuNav [data-menu-page]')) b.classList.toggle('active', b.dataset.menuPage === page);
   const pages = $('menuPages');
   if (pages) pages.scrollTop = 0;
