@@ -137,6 +137,7 @@ function refreshGarage() {
   const e = CARS[S.carIdx], st = effStats(e);
   S.st = st;
   $('carName').textContent = e.name.toUpperCase();
+  if ($('homeCarName')) $('homeCarName').textContent = e.name.toUpperCase();
   bar('bSpeed', st.top / 80); bar('bAcc', st.acc / 1.3); bar('bHnd', st.hnd / 1.5);
   $('swatches').classList.toggle('hidden', e.recolor === false);
   [...$('swatches').children].forEach((b) => b.classList.toggle('on', Number(b.dataset.c) === S.color));
@@ -158,7 +159,31 @@ $('nextCar').addEventListener('click', () => cycle(1));
 if (CARS.length < 2) { $('prevCar').classList.add('hidden'); $('nextCar').classList.add('hidden'); }
 refreshGarage();
 applyCar();
+
 const menu = initMenu(S, { cars: CARS, onUpgrade: () => refreshGarage() });
+
+function showMenuPage(page) {
+  for (const el of document.querySelectorAll('.menu-page')) el.classList.toggle('active', el.id === 'page-' + page);
+  for (const b of document.querySelectorAll('#menuNav [data-menu-page]')) b.classList.toggle('active', b.dataset.menuPage === page);
+  const pages = $('menuPages');
+  if (pages) pages.scrollTop = 0;
+}
+document.querySelectorAll('#menuNav [data-menu-page], [data-menu-page]').forEach((b) => {
+  b.addEventListener('click', () => showMenuPage(b.dataset.menuPage));
+});
+document.querySelectorAll('#menuNav [data-menu-action]').forEach((b) => {
+  b.addEventListener('click', () => {
+    if (b.dataset.menuAction === 'shop') $('shopBtn').click();
+    if (b.dataset.menuAction === 'leaderboard') {
+      $('playerName').value = safeGet('hr3d-name') || 'Racer';
+      $('leaderboard').classList.remove('hidden'); refreshLeaderboard();
+    }
+  });
+});
+document.querySelectorAll('[data-setting]').forEach((b) => {
+  b.addEventListener('click', () => $(b.dataset.setting)?.click());
+});
+
 
 // ------------------------------------------------------------------ UI helpers / flow
 const overlay = $('overlay');
@@ -258,6 +283,7 @@ function resetRun(mode) {
   });
 }
 function enterMenu() {
+  showMenuPage('home');
   $('pauseOverlay').classList.add('hidden');
   $('leaderboard').classList.add('hidden');
   $('shareBtn').classList.add('hidden');
