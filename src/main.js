@@ -296,8 +296,8 @@ function enterMenu() {
   pickups.reset(); pickups.group.visible = false;
   traffic.group.visible = false;
   overlay.classList.remove('over', 'hidden');
-  $('title').textContent = 'HIGHWAY RACER 3D';
-  $('msg').textContent = 'Brake + steer = drift.  Nitro: N2O button / Shift.';
+  $('title').innerHTML = 'HIGHWAY RACER <span>3D</span>';
+  $('msg').textContent = 'Choose your race. Build your machine. Own the highway.';
   $('menuBox').classList.remove('hidden');
   $('garageBtn').classList.add('hidden');
   $('coinBal').classList.remove('hidden');
