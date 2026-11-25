@@ -134,3 +134,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;font-family:sy
 #leaderRows li b{color:#ffd24d;font-variant-numeric:tabular-nums}
 #leaderRows .empty{justify-content:center;opacity:.7}
 @media (max-height:520px){#pauseOverlay .panel,#leaderboard .panel{padding:14px}#pauseOverlay .actions,#leaderboard .actions{margin-top:8px}}
+
+#playerName{user-select:text;-webkit-user-select:text}
+#overlay .row{flex-wrap:wrap;justify-content:center;max-width:96vw}
+#overlay .row button.ghost{font-size:13px;letter-spacing:.06em;padding:10px 14px}
