@@ -180,7 +180,7 @@ function pauseGame() {
   S.mode = 'paused';
   controls.keys.clear(); controls.padGas = controls.padBrake = controls.padNitro = false;
   controls.dragging = false; controls.wheelAngle = 0;
-  sfx.stop();
+  sfx.pause();
   $('pauseBtn').classList.add('hidden');
   $('pauseOverlay').classList.remove('hidden');
 }
