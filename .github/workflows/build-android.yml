@@ -1,0 +1,71 @@
+name: Build Android APK (Capacitor)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.json"
+      - ".github/workflows/build-android.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: npm install
+      - run: npm run build
+      - name: Generate Capacitor Android project
+        run: npx cap add android
+      - name: Sync web assets
+        run: npx cap sync android
+      - name: Set landscape and immersive app window
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          manifest = Path("android/app/src/main/AndroidManifest.xml")
+          source = manifest.read_text()
+          source, count = re.subn(
+              r'(<activity\\b(?=[^>]*android:name="\\.MainActivity")[^>]*?)>',
+              r'\\1 android:screenOrientation="landscape">',
+              source, count=1, flags=re.S
+          )
+          if count != 1:
+              raise SystemExit("Could not set MainActivity landscape orientation")
+          manifest.write_text(source)
+          styles = Path("android/app/src/main/res/values/styles.xml")
+          if styles.exists():
+              source = styles.read_text()
+              marker = '<style name="AppTheme.NoActionBar"'
+              pos = source.find(marker)
+              if pos >= 0:
+                  end = source.find('</style>', pos)
+                  if end >= 0 and 'android:windowFullscreen' not in source[pos:end]:
+                      source = source[:end] + '    <item name="android:windowFullscreen">true</item>\\n  ' + source[end:]
+                      styles.write_text(source)
+          PY
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: highway-racer-3d-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
