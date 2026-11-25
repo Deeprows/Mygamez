@@ -4,12 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1220" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="./icons/icon.svg" />
   <title>Highway Racer 3D</title>
 </head>
 <body>
@@ -53,148 +47,94 @@
     <button id="musicBtn" title="Music">&#9835;</button>
     <button id="todBtn" title="Time of day">&#9728;</button>
     <button id="qualBtn" title="Graphics quality">HIGH</button>
-    <button id="pauseBtn" title="Pause game" aria-label="Pause game">Ⅱ</button>
-    <button id="immersiveBtn" title="Fullscreen and landscape" aria-label="Fullscreen and landscape">⛶</button>
   </div>
-
 
   <div id="overlay">
-    <header class="menu-brand">
-      <div class="brand-mark">HR<span>3D</span></div>
-      <div class="brand-copy"><strong>HIGHWAY RACER</strong><small>DRIVE YOUR LIMIT</small></div>
-      <div class="menu-currency" id="coinBal">&#9678; 0</div>
+    <header id="mhead">
+      <div class="brand">
+        <div class="logo">HR<b>3D</b></div>
+        <div class="brandtxt"><strong>HIGHWAY RACER</strong><span>DRIVE YOUR LIMIT</span></div>
+      </div>
+      <div id="coinBal" class="pill">&#9678; 0</div>
     </header>
 
-    <nav id="menuNav" aria-label="Main menu">
-      <button class="active" data-menu-page="home">HOME</button>
-      <button data-menu-page="race">RACE</button>
-      <button data-menu-page="garage">GARAGE</button>
-      <button data-menu-action="shop">UPGRADES</button>
-      <button data-menu-action="leaderboard">RECORDS</button>
-      <button data-menu-page="settings">SETTINGS</button>
-    </nav>
+    <section id="result">
+      <span class="eyebrow">RUN SUMMARY</span>
+      <h1 id="title">HIGHWAY RACER 3D</h1>
+      <p id="msg"></p>
+    </section>
 
     <div id="menuBox">
-    <main id="menuPages">
-      <section id="page-home" class="menu-page active">
-        <div class="home-kicker">THE ROAD IS YOURS</div>
-        <h1 id="title">HIGHWAY RACER <span>3D</span></h1>
-        <p id="msg">Choose your race. Build your machine. Own the highway.</p>
-        <div class="home-feature">
-          <div class="feature-label">CURRENT VEHICLE</div>
-          <div id="homeCarName">STRIKER</div>
-          <div class="feature-note">Your selected car is ready.</div>
-          <button class="text-action" data-menu-page="garage">CUSTOMISE VEHICLE <span>→</span></button>
-        </div>
-        <div class="home-actions">
-          <button id="start">START RACE <span>→</span></button>
-          <button class="secondary-action" data-menu-page="race">SELECT GAME MODE</button>
-        </div>
-        <div class="home-footnote">ENDLESS • TIME ATTACK • MISSIONS</div>
-      </section>
-
-      <section id="page-race" class="menu-page hidden">
-        <div class="page-heading"><small>01 / RACE SETUP</small><h2>Choose your challenge</h2><p>Select a mode and configure the road.</p></div>
-        <div class="race-type-label">RACE OPPONENT</div>
-        <div id="raceTypes" class="race-types">
-          <button type="button" class="race-type-card selected" data-race-type="computer">
-            <span class="race-type-icon">&#9881;</span><b>VS COMPUTER</b><small>Race against AI traffic and computer-controlled opponents.</small>
+      <main id="panel">
+        <!-- RACE -->
+        <div class="view" data-v="race">
+          <button class="vehicle" data-tab="garage">
+            <span><small>CURRENT VEHICLE</small><b id="carChip">STRIKER</b></span>
+            <em>CUSTOMISE <i>&#8250;</i></em>
           </button>
-          <button type="button" class="race-type-card" data-race-type="users">
-            <span class="race-type-icon">&#9673;</span><b>USERS VS USERS</b><small>Challenge other players online in real time.</small><em>ONLINE MULTIPLAYER</em>
-          </button>
-        </div>
-        <div id="multiplayerNotice" class="multiplayer-notice hidden">Online multiplayer is not connected yet. The online room service must be added before player-versus-player races can start.</div>
-        <div id="modes" class="tabs"></div>
-        <div id="modeInfo"></div>
-        <div id="missionPick" class="carrow hidden">
-          <button id="prevM" class="arrow">&#8249;</button>
-          <div class="mcenter"><div id="missionName"></div><div id="missionDesc"></div></div>
-          <button id="nextM" class="arrow">&#8250;</button>
-        </div>
-        <button id="twoWayBtn" class="chip">TWO-WAY ROAD: OFF</button>
-        <button class="primary-wide" data-menu-page="home">CONFIRM RACE SETUP</button>
-      </section>
-
-      <section id="page-garage" class="menu-page hidden">
-        <div class="page-heading"><small>02 / VEHICLE COLLECTION</small><h2>Your garage</h2><p>Select a car and tune its appearance.</p></div>
-        <div id="garage">
-          <div class="carrow"><button id="prevCar" class="arrow">&#8249;</button><div id="carName">STRIKER</div><button id="nextCar" class="arrow">&#8250;</button></div>
-          <div class="bars">
-            <div class="bar"><span>TOP SPEED</span><b><i id="bSpeed"></i></b></div>
-            <div class="bar"><span>ACCELERATION</span><b><i id="bAcc"></i></b></div>
-            <div class="bar"><span>HANDLING</span><b><i id="bHnd"></i></b></div>
+          <div class="eyebrow">GAME MODE</div>
+          <div id="modes" class="modes"></div>
+          <div id="modeInfo"></div>
+          <div id="missionPick" class="mpick hidden">
+            <button id="prevM" class="arrow">&#8249;</button>
+            <div class="mcenter"><div id="missionName"></div><div id="missionDesc"></div></div>
+            <button id="nextM" class="arrow">&#8250;</button>
           </div>
-          <div class="paint-label">BODY FINISH</div>
-          <div id="swatches"></div>
+          <button id="twoWayBtn" class="toggle" role="switch" aria-checked="false">
+            <span class="tl">TWO-WAY ROAD<small>Oncoming traffic &middot; x2 score on that side</small></span>
+            <span class="knob"></span>
+          </button>
         </div>
-        <button class="primary-wide" data-menu-page="home">BACK TO HOME</button>
-      </section>
 
-      <section id="page-settings" class="menu-page hidden">
-        <div class="page-heading"><small>03 / PREFERENCES</small><h2>Game settings</h2><p>Adjust sound, atmosphere and visual performance.</p></div>
-        <div class="settings-list">
-          <button data-setting="muteBtn"><span><b>Sound effects</b><small>Engine, collisions and game sounds</small></span><strong>TOGGLE</strong></button>
-          <button data-setting="musicBtn"><span><b>Music</b><small>Background synth soundtrack</small></span><strong>TOGGLE</strong></button>
-          <button data-setting="todBtn"><span><b>Time of day</b><small>Cycle daylight, sunset and night</small></span><strong>CHANGE</strong></button>
-          <button data-setting="qualBtn"><span><b>Graphics quality</b><small>Balance detail and phone performance</small></span><strong>CHANGE</strong></button>
-          <button data-setting="immersiveBtn"><span><b>Immersive display</b><small>Request fullscreen and landscape</small></span><strong>OPEN</strong></button>
+        <!-- GARAGE -->
+        <div class="view" data-v="garage">
+          <div class="eyebrow">VEHICLE <span id="carCount"></span></div>
+          <div id="garage">
+            <div class="carrow">
+              <button id="prevCar" class="arrow">&#8249;</button>
+              <div id="carName">STRIKER</div>
+              <button id="nextCar" class="arrow">&#8250;</button>
+            </div>
+            <div class="bars">
+              <div class="bar"><span>SPEED</span><b><i id="bSpeed"></i></b></div>
+              <div class="bar"><span>ACCEL</span><b><i id="bAcc"></i></b></div>
+              <div class="bar"><span>HANDLING</span><b><i id="bHnd"></i></b></div>
+            </div>
+            <div class="eyebrow">PAINT</div>
+            <div id="swatches"></div>
+          </div>
         </div>
-      </section>
-    </main>
+
+        <!-- UPGRADES -->
+        <div class="view" data-v="upgrades">
+          <div class="shophead">
+            <div><div class="eyebrow">UPGRADING</div><div id="shopCar"></div></div>
+            <div id="shopCoins" class="pill"></div>
+          </div>
+          <div id="shopRows"></div>
+        </div>
+
+        <!-- RECORDS -->
+        <div class="view" data-v="records">
+          <div class="eyebrow">PERSONAL BEST</div>
+          <div id="records"></div>
+        </div>
+      </main>
+
+      <nav id="mnav">
+        <button data-tab="race"><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>RACE</span></button>
+        <button data-tab="garage"><svg viewBox="0 0 24 24"><path d="M3 17v-4l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4h-3M3 17h2M19 17h2M8 17h8M3 13h18"/><circle cx="7" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg><span>GARAGE</span></button>
+        <button data-tab="upgrades"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg><span>UPGRADES</span></button>
+        <button data-tab="records"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/></svg><span>RECORDS</span></button>
+      </nav>
     </div>
 
-    <div class="menu-bottom">
-      <button id="garageBtn" class="ghost hidden">BACK TO GARAGE</button>
-      <button id="shopBtn" class="ghost">SHOP</button>
-      <button id="leaderboardBtn" class="ghost">LEADERBOARD</button>
-      <button id="shareBtn" class="ghost hidden">SHARE SCORE</button>
-    </div>
-  </div>
-
-  <div id="raceCountdown" class="hidden" aria-live="assertive"><span id="countdownValue">3</span><small>GET READY</small></div>
-
-  <div id="pauseOverlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
-    <div class="panel">
-      <h1 id="pauseTitle">PAUSED</h1>
-      <p>Your race is paused.</p>
-      <div class="actions">
-        <button id="resumeBtn">RESUME</button>
-        <button id="restartBtn" class="ghost">RESTART</button>
-        <button id="pauseMenuBtn" class="ghost">MAIN MENU</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="leaderboard" class="hidden" role="dialog" aria-modal="true" aria-labelledby="leaderTitle">
-    <div class="panel leaderboard-panel">
-      <h1 id="leaderTitle">LEADERBOARD</h1>
-      <div class="leader-tools">
-        <input id="playerName" maxlength="18" autocomplete="nickname" aria-label="Player name" placeholder="Your racer name" />
-        <select id="leaderMode" aria-label="Leaderboard mode">
-          <option value="endless">ENDLESS</option>
-          <option value="time">TIME ATTACK</option>
-          <option value="missions">MISSIONS</option>
-        </select>
-      </div>
-      <div id="leaderStatus">Local scores on this device</div>
-      <ol id="leaderRows"></ol>
-      <div class="actions">
-        <button id="syncScoreBtn" class="ghost">SYNC SCORE</button>
-        <button id="leaderBackBtn">BACK</button>
-      </div>
+    <div id="playBar">
+      <button id="garageBtn" class="btn ghost hidden">MENU</button>
+      <button id="start" class="btn play">PLAY</button>
     </div>
   </div>
 
-  <div id="shop" class="hidden">
-    <h1>UPGRADES</h1>
-    <div id="shopCar"></div>
-    <div id="shopCoins"></div>
-    <div id="shopRows"></div>
-    <button id="shopBack" class="ghost">BACK</button>
-  </div>
-
-  <script src="./leaderboard-config.js"></script>
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
