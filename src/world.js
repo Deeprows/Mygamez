@@ -191,7 +191,7 @@ export class World {
     const bldGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0); // scaled per instance (w, h, d)
     const rockGeo = new THREE.DodecahedronGeometry(1, 0);
 
-    this.biome = 'highway'; this._n = 0; this.twoWay = false;
+    this.biome = 'highway'; this._n = 0; this.twoWay = false; this.quality = 2;
     this.snowK = 0; this.snowTarget = 0; this.tt = 0;
     // checkpoint arch (time attack), placed by setCheckpoint()
     this.cp = this._makeGantry(signMat(makeSignTexture('CHECKPOINT', '#f2c500', '#1b1b1b')));
@@ -269,6 +269,8 @@ export class World {
     this.segs.forEach((s, i) => { s.position.z = (2 - i) * SEG_LEN; this._scatter(s); });
   }
 
+  setQuality(q) { this.quality = Math.max(0, Math.min(2, q)); for (const seg of this.segs) this._scatter(seg); }
+
   /** Biome used for segments recycled from now on (appears ahead of the player). */
   setBiome(name) { if (BIOME[name]) this.biome = name; }
   /** Biome of the road segment the player is on. */
@@ -288,7 +290,7 @@ export class World {
     u.grass.material.color.setHex(b.grass);
 
     // trees
-    const n = b.trees;
+    const n = Math.round(b.trees * [0.55, 0.8, 1][this.quality]);
     u.trunks.count = u.foliage.count = n;
     const [h0, hr, sat, l0, lr] = b.leaf;
     for (let i = 0; i < n; i++) {
