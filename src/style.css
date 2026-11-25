@@ -187,3 +187,6 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;font-family:sy
 #overlay.over{justify-content:center;align-items:center;padding:24px;background:#090f18f5}#overlay.over .menu-brand,#overlay.over #menuNav{display:none}#overlay.over #menuBox{flex:0;overflow:visible}#overlay.over #menuPages{overflow:visible;padding:12px}#overlay.over #page-home{min-height:0}#overlay.over .menu-bottom{border:0}#overlay.over #title{font-size:clamp(28px,7vw,42px)}
 @media(max-height:700px){#menuPages{padding-top:12px;padding-bottom:8px}#page-home{gap:10px}.home-feature{padding:13px}#overlay #title{font-size:clamp(28px,7vw,42px)}}
 @media(min-width:700px){#overlay{align-items:center}.menu-brand,#menuNav,#menuBox,.menu-bottom{width:min(620px,100%)}#menuPages{padding:24px 28px}}
+
+/* Keep gameplay-only quick controls out of the main menu; settings page triggers them. */
+body:has(#overlay:not(.hidden)) #btns{display:none}
