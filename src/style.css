@@ -112,3 +112,25 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;font-family:sy
   #shopRows{gap:6px}
   .shrow{padding:6px 12px}
 }
+
+
+/* ---- Stage 5: pause, sharing, leaderboard, immersive controls ---- */
+#btns button#pauseBtn,#btns button#immersiveBtn{font-size:18px;min-width:38px}
+#pauseOverlay,#leaderboard{position:fixed;inset:0;z-index:12;display:flex;align-items:center;justify-content:center;padding:18px;background:#050a14eF;backdrop-filter:blur(12px);touch-action:auto}
+#pauseOverlay.hidden,#leaderboard.hidden{display:none}
+#pauseOverlay .panel,#leaderboard .panel{width:min(460px,94vw);max-height:min(88dvh,720px);overflow:auto;padding:24px;border:1px solid #ffffff30;border-radius:22px;background:linear-gradient(155deg,#18283c,#0b1220 72%);box-shadow:0 22px 70px #0009;text-align:center}
+#pauseOverlay h1,#leaderboard h1{margin:0 0 10px;font-size:clamp(28px,7vw,42px);letter-spacing:.12em}
+#pauseOverlay p{margin:0 0 18px;opacity:.8}
+#pauseOverlay .actions,#leaderboard .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px}
+#pauseOverlay button,#leaderboard button{font:800 14px system-ui;letter-spacing:.08em;color:#fff;background:linear-gradient(#26c3ff,#0a82d8);border:0;border-radius:12px;padding:12px 18px;min-height:44px}
+#pauseOverlay button.ghost,#leaderboard button.ghost{background:#ffffff18;border:1px solid #ffffff40}
+.leaderboard-panel{display:flex;flex-direction:column;gap:12px}
+.leader-tools{display:flex;gap:8px;flex-wrap:wrap}
+.leader-tools input,.leader-tools select{min-width:0;flex:1;padding:12px;border:1px solid #ffffff35;border-radius:10px;background:#ffffff12;color:#fff;font:600 14px system-ui}
+.leader-tools select option{color:#111}
+#leaderStatus{font-size:12px;opacity:.75;min-height:1.4em}
+#leaderRows{list-style:none;margin:0;padding:0;display:grid;gap:6px;text-align:left}
+#leaderRows li{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;background:#ffffff0d;font-size:14px}
+#leaderRows li b{color:#ffd24d;font-variant-numeric:tabular-nums}
+#leaderRows .empty{justify-content:center;opacity:.7}
+@media (max-height:520px){#pauseOverlay .panel,#leaderboard .panel{padding:14px}#pauseOverlay .actions,#leaderboard .actions{margin-top:8px}}
