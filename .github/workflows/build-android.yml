@@ -44,8 +44,8 @@ jobs:
           manifest = Path("android/app/src/main/AndroidManifest.xml")
           source = manifest.read_text()
           source, count = re.subn(
-              r'(<activity\\b(?=[^>]*android:name="\\.MainActivity")[^>]*?)>',
-              r'\\1 android:screenOrientation="landscape">',
+              r'(<activity\b(?=[^>]*android:name="\.MainActivity")[^>]*?)>',
+              r'\1 android:screenOrientation="landscape">',
               source, count=1, flags=re.S
           )
           if count != 1:
@@ -59,7 +59,7 @@ jobs:
               if pos >= 0:
                   end = source.find('</style>', pos)
                   if end >= 0 and 'android:windowFullscreen' not in source[pos:end]:
-                      source = source[:end] + '    <item name="android:windowFullscreen">true</item>\\n  ' + source[end:]
+                      source = source[:end] + '    <item name="android:windowFullscreen">true</item>\n  ' + source[end:]
                       styles.write_text(source)
           PY
       - name: Build debug APK
