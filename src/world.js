@@ -269,7 +269,16 @@ export class World {
     this.segs.forEach((s, i) => { s.position.z = (2 - i) * SEG_LEN; this._scatter(s); });
   }
 
-  setQuality(q) { this.quality = Math.max(0, Math.min(2, q)); for (const seg of this.segs) this._scatter(seg); }
+  setQuality(q) {
+    this.quality = Math.max(0, Math.min(2, q));
+    const factor = [0.55, 0.8, 1][this.quality];
+    for (const seg of this.segs) {
+      const b = BIOME[seg.userData.biome];
+      const count = Math.round(b.trees * factor);
+      seg.userData.trunks.count = count;
+      seg.userData.foliage.count = count;
+    }
+  }
 
   /** Biome used for segments recycled from now on (appears ahead of the player). */
   setBiome(name) { if (BIOME[name]) this.biome = name; }
