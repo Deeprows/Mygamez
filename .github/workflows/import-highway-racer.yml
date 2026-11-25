@@ -1,0 +1,64 @@
+name: Import Highway Racer Stage 2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'highway-racer-3d-stage2/highway-racer-3d-stage2.zip'
+      - '.github/workflows/import-highway-racer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: highway-racer-import
+  cancel-in-progress: false
+
+jobs:
+  import-build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract project into its specified repository paths
+        run: |
+          mkdir -p "${RUNNER_TEMP}/highway-racer-import"
+          unzip -oq highway-racer-3d-stage2/highway-racer-3d-stage2.zip -d "${RUNNER_TEMP}/highway-racer-import"
+          test -d "${RUNNER_TEMP}/highway-racer-import/highway-racer-3d"
+          cp -a "${RUNNER_TEMP}/highway-racer-import/highway-racer-3d/." .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build imported project
+        run: |
+          npm install
+          npm run build
+
+      - name: Commit extracted files to main
+        run: |
+          rm -f highway-racer-3d-stage2/highway-racer-3d-stage2.zip
+          rmdir highway-racer-3d-stage2 2>/dev/null || true
+          rm -f .github/workflows/import-highway-racer.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Highway Racer 3D Stage 2 project"
+          git push origin HEAD:main
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
