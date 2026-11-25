@@ -1,0 +1,13 @@
+{
+  "id": "./",
+  "name": "Highway Racer 3D",
+  "short_name": "Highway Racer",
+  "description": "A 3D highway racing game.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
+  "icons": [{ "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
