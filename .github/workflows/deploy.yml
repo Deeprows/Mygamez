@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages
+name: Build and Deploy Three.js Game to GitHub Pages
 
 on:
   push:
@@ -19,43 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Keep the existing Three.js site at the root while adding the Godot
-      # browser preview under /godot-preview/.
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - run: npm install
       - run: npm run build
-
-      # Build the Godot preview with the WebGL 2-compatible renderer.
-      # The source project remains unchanged; only this temporary CI copy
-      # switches away from Forward+ for browser export.
-      - uses: chickensoft-games/setup-godot@v2
-        with:
-          version: 4.3.0
-          use-dotnet: false
-          include-templates: true
-
-      - name: Prepare Godot web project
-        run: |
-          mkdir -p /tmp/godot-web
-          cp -a godot-1/godot/. /tmp/godot-web/
-          mkdir -p /tmp/godot-web/preview
-          sed -i 's/"Forward Plus"/"GL Compatibility"/g; s/"forward_plus"/"gl_compatibility"/g' /tmp/godot-web/project.godot
-
-      - name: Import and smoke-test Godot project
-        run: |
-          godot --headless --editor --path /tmp/godot-web --quit
-          godot --headless --path /tmp/godot-web --quit-after 5
-
-      - name: Export Godot web preview
-        run: |
-          godot --headless --path /tmp/godot-web --export-release "Web" preview/index.html
-          test -s /tmp/godot-web/preview/index.html
-          mkdir -p dist/godot-preview
-          cp -a /tmp/godot-web/preview/. dist/godot-preview/
-
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
