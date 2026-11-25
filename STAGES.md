@@ -70,11 +70,16 @@ keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 - NOT done from the original Stage 4 plan: **tunnel and bridge** pieces (needs roofed/elevated segment types; add a segment variant in `world.js`). Mission set is sequential data only, no star ratings.
 - NOT verified: this stage was written in an environment with no browser and no internet. Traffic AI, pickups, biome rotation and mission helpers were simulated headlessly (no overlaps, lane rules hold in two-way mode, pickups collected at 70 m/s frames), but the visuals (new truck/bus models, building windows, menu/shop layout on phones) have not been looked at. Expect small visual tweaks.
 
-## STAGE 5 — Ship it
-- PWA (manifest + service worker), fullscreen + orientation lock to landscape, pause menu.
-- Online leaderboard (Supabase/Firebase free tier), share-score button.
-- Wrap to Android/iOS with Capacitor (`npx cap add android`) using the `dist` folder.
-- Performance pass: quality setting (shadow size, pixel ratio, traffic count, tree count); target 60 fps on mid phones.
+## STAGE 5 — IN PROGRESS: ship & platform support
+- **PWA foundation added:** install manifest, app icon, service worker with offline shell + runtime asset caching. Browser installation/offline behavior still needs a real-device check.
+- **Immersive play added:** fullscreen request + landscape orientation lock from the in-game control. Browser/device support varies; native orientation must be checked after Capacitor platform generation.
+- **Pause system added:** pause/resume, restart current mode, return to menu; keyboard P / Escape and auto-pause when the tab is hidden.
+- **Score sharing added:** native share sheet where supported, clipboard fallback elsewhere.
+- **Leaderboard UI + adapter added:** local device records work immediately. Supabase REST support is ready but requires a Supabase project, `scores` table, anon key and row-level security policy in `public/leaderboard-config.js`; online play is not active until configured.
+- **Capacitor project config added** for `com.deeprows.highwayracer`, web output `dist`, Android/iOS package scripts. Native Android/iOS projects and signed builds still need to be generated and tested (`npx cap add android` / `npx cap add ios`).
+- **Performance controls expanded:** LOW/MED/HIGH now adjust pixel ratio, post FX, shadow map size, traffic density and scenery instance counts. 60 fps on mid-range phones is a target, not yet measured or guaranteed.
+- Godot preview deployment has been removed from the Pages workflow; the root Three.js/Vite game remains the deployed game.
+- **Still required to close Stage 5:** configure and test the online leaderboard, generate/build native wrappers, and verify PWA install/offline, fullscreen/orientation and frame rate on actual phones.
 
 ## Known limits / ideas not done
 - Cars/trucks/buses are boxy by design (swap in GLBs, see public/models/README.md). Trees are single icosahedron blobs. Traffic only changes lanes in the same direction (no overtaking through the oncoming lanes).
