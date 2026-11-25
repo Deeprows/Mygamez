@@ -15,6 +15,7 @@ import { TODS, TOD, TOD_ICONS, applyTOD } from './tod.js';
 import { MISSIONS, goalValue, goalTarget, goalLabel, fmtTime } from './modes.js';
 import { profile, save, addCoins, effStats } from './save.js';
 import { initMenu } from './menu.js';
+import { recordScore, getLocalScores, fetchOnlineScores, submitOnlineScore } from './leaderboard.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -88,7 +89,8 @@ function applyQuality() {
   const pr = Math.min(window.devicePixelRatio, q === 0 ? 1.25 : (MOBILE ? 1.5 : 2));
   renderer.setPixelRatio(pr);
   post.setQuality(q);
-  const sz = q === 2 ? 2048 : 1024;
+  traffic.setQuality(q); world.setQuality(q);
+  const sz = q === 2 ? 2048 : (q === 1 ? 1024 : 512);
   sun.shadow.mapSize.set(sz, sz);
   if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
   $('qualBtn').textContent = ['LOW', 'MED', 'HIGH'][q];
@@ -173,6 +175,81 @@ function flash() {
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('hit')));
 }
 
+function pauseGame() {
+  if (S.mode !== 'playing') return;
+  S.mode = 'paused';
+  controls.keys.clear(); controls.padGas = controls.padBrake = controls.padNitro = false;
+  controls.dragging = false; controls.wheelAngle = 0;
+  sfx.stop();
+  $('pauseBtn').classList.add('hidden');
+  $('pauseOverlay').classList.remove('hidden');
+}
+function resumeGame() {
+  if (S.mode !== 'paused') return;
+  $('pauseOverlay').classList.add('hidden');
+  S.mode = 'playing';
+  sfx.start();
+}
+$('pauseBtn').addEventListener('click', pauseGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+$('restartBtn').addEventListener('click', startGame);
+$('pauseMenuBtn').addEventListener('click', enterMenu);
+
+function shareScore() {
+  const mode = S.mission ? 'Missions' : (S.gm === 'time' ? 'Time Attack' : 'Endless');
+  const text = `I scored ${Math.floor(S.score).toLocaleString()} in Highway Racer 3D!\n${mode} · ${(S.dist / 1000).toFixed(2)} km · ${S.runCoins} coins\nPlay: ${location.href}`;
+  if (navigator.share) navigator.share({ title: 'Highway Racer 3D score', text }).catch(() => {});
+  else if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast('SCORE COPIED')).catch(() => toast('SHARING NOT AVAILABLE'));
+  else toast('SHARING NOT AVAILABLE');
+}
+$('shareBtn').addEventListener('click', shareScore);
+
+async function refreshLeaderboard() {
+  const mode = $('leaderMode').value;
+  const local = getLocalScores(mode);
+  const remote = await fetchOnlineScores(mode);
+  const rows = remote.configured ? remote.rows : local;
+  $('leaderStatus').textContent = remote.configured ? 'Online leaderboard' : 'Device leaderboard · online service not configured';
+  $('leaderRows').innerHTML = '';
+  if (!rows.length) { $('leaderRows').innerHTML = '<li class="empty">No scores yet. Finish a race to set a record.</li>'; return; }
+  for (const row of rows.slice(0, 10)) {
+    const li = document.createElement('li');
+    const name = document.createElement('span'); name.textContent = row.player_name || row.name || 'Racer';
+    const value = document.createElement('b'); value.textContent = Number(row.score || 0).toLocaleString();
+    li.append(name, value); $('leaderRows').appendChild(li);
+  }
+}
+$('leaderboardBtn').addEventListener('click', () => {
+  $('playerName').value = safeGet('hr3d-name') || 'Racer';
+  $('leaderboard').classList.remove('hidden'); refreshLeaderboard();
+});
+$('leaderMode').addEventListener('change', refreshLeaderboard);
+$('playerName').addEventListener('change', () => safeSet('hr3d-name', $('playerName').value.trim().slice(0, 18) || 'Racer'));
+$('leaderBackBtn').addEventListener('click', () => $('leaderboard').classList.add('hidden'));
+$('syncScoreBtn').addEventListener('click', async () => {
+  const name = $('playerName').value.trim().slice(0, 18) || 'Racer';
+  safeSet('hr3d-name', name);
+  const last = (() => { try { return JSON.parse(safeGet('hr3d-last-score') || 'null'); } catch { return null; } })();
+  if (!last) { $('leaderStatus').textContent = 'Finish a race before syncing a score.'; return; }
+  $('leaderStatus').textContent = 'Submitting score…';
+  const result = await submitOnlineScore({ ...last, name });
+  $('leaderStatus').textContent = result.ok ? 'Score submitted online.' : (result.configured ? 'Could not submit. Check your connection and table permissions.' : 'Online leaderboard needs Supabase URL and anon key in public/leaderboard-config.js.');
+  refreshLeaderboard();
+});
+
+async function enterImmersive() {
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+    await screen.orientation?.lock?.('landscape');
+    toast('LANDSCAPE MODE');
+  } catch { toast('USE DEVICE ROTATION / FULLSCREEN'); }
+}
+$('immersiveBtn').addEventListener('click', enterImmersive);
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'playing') pauseGame(); });
+
 function resetRun(mode) {
   Object.assign(S, {
     mode, x: laneX(1), z: 0, speed: 0, vx: 0, psi: 0, slip: 0, drifting: false, nitro: 100, nitroLock: false, nK: 0, health: 100, score: 0, dist: 0, shake: 0, pitch: 0,
@@ -181,6 +258,9 @@ function resetRun(mode) {
   });
 }
 function enterMenu() {
+  $('pauseOverlay').classList.add('hidden');
+  $('leaderboard').classList.add('hidden');
+  $('shareBtn').classList.add('hidden');
   resetRun('menu');
   world.reset('highway'); world.setTwoWay(false); world.setSnow(0);
   pickups.reset(); pickups.group.visible = false;
@@ -195,6 +275,9 @@ function enterMenu() {
   menu.refresh();
 }
 function startGame() {
+  $('pauseOverlay').classList.add('hidden');
+  $('leaderboard').classList.add('hidden');
+  $('shareBtn').classList.add('hidden');
   const mission = S.gm === 'missions' ? MISSIONS[S.missionIdx] : null;
   resetRun('playing');
   S.st = effStats(CARS[S.carIdx]);
@@ -208,6 +291,7 @@ function startGame() {
   pickups.reset(); pickups.group.visible = true;
   if (S.gm === 'time') { S.timeLeft = 60; world.setCheckpoint(S.cpZ); } else if (mission) S.timeLeft = mission.time;
   overlay.classList.add('hidden');
+  $('pauseBtn').classList.remove('hidden');
   $('coinBal').classList.add('hidden');
   sfx.start();
   sfx.setMuted(sfx.muted); if (sfx.music) sfx.setMusic(true);
@@ -218,6 +302,13 @@ function startGame() {
 function finish(reason) {
   if (S.mode !== 'playing') return;
   S.mode = 'over';
+  $('pauseBtn').classList.add('hidden');
+  $('pauseOverlay').classList.add('hidden');
+  $('shareBtn').classList.remove('hidden');
+  const scoreMode = S.mission ? 'missions' : S.gm;
+  const scoreEntry = { name: safeGet('hr3d-name') || 'Racer', score: Math.floor(S.score), mode: scoreMode, distance: Math.floor(S.dist), car: CARS[S.carIdx].name };
+  recordScore(scoreEntry);
+  safeSet('hr3d-last-score', JSON.stringify(scoreEntry));
   S.drifting = false;
   sfx.stop();
   const score = Math.floor(S.score), m = S.mission;
@@ -248,6 +339,7 @@ function finish(reason) {
     $('garageBtn').classList.remove('hidden');
     $('coinBal').classList.remove('hidden');
     $('start').textContent = btn;
+    $('shareBtn').classList.remove('hidden');
     menu.refresh();
     overlay.classList.add('over');
     overlay.classList.remove('hidden');
@@ -256,6 +348,8 @@ function finish(reason) {
 $('start').addEventListener('click', startGame);
 $('garageBtn').addEventListener('click', enterMenu);
 addEventListener('keydown', (e) => {
+  if ((e.code === 'Escape' || e.code === 'KeyP') && S.mode === 'playing') { e.preventDefault(); pauseGame(); }
+  else if ((e.code === 'Escape' || e.code === 'KeyP') && S.mode === 'paused') { e.preventDefault(); resumeGame(); }
   if (e.code === 'Enter' && !overlay.classList.contains('hidden') && $('shop').classList.contains('hidden')) startGame();
   if (e.code === 'KeyH' && S.mode === 'playing') sfx.horn();
 });
@@ -511,6 +605,7 @@ function updateHud() {
   $('nitro').firstElementChild.style.transform = `scaleX(${S.nitro / 100})`;
   $('nitro').classList.toggle('locked', S.nitroLock);
   if (S.runCoins !== lastCoins) { $('coins').textContent = '\u25ce ' + S.runCoins; lastCoins = S.runCoins; }
+  $('pauseBtn').classList.toggle('hidden', S.mode !== 'playing');
   const g = goalText();
   if (g !== lastGoal) { $('goal').textContent = g; lastGoal = g; }
   if (S.mul !== lastMul) { $('mult').classList.toggle('show', S.mul > 1); lastMul = S.mul; }
@@ -540,7 +635,7 @@ const _sz = new THREE.Vector2();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
   controls.update(dt);
-  if (S.mode === 'menu') menuFrame(dt); else driveFrame(dt);
+  if (S.mode === 'menu') menuFrame(dt); else if (S.mode === 'playing') driveFrame(dt);
 
   sun.position.set(S.x + cur.sunPos[0], cur.sunPos[1], S.z + cur.sunPos[2]);
   sun.target.position.set(S.x, 0, S.z - 10);
