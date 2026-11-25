@@ -305,6 +305,9 @@ function resetRun(mode) {
   });
 }
 function enterMenu() {
+  raceStartToken++;
+  $('raceCountdown').classList.add('hidden');
+  $('raceCountdown').classList.remove('go');
   showMenuPage('home');
   refreshRaceType();
   $('pauseOverlay').classList.add('hidden');
@@ -323,17 +326,20 @@ function enterMenu() {
   $('start').textContent = 'START';
   menu.refresh();
 }
-function startGame() {
+let raceStartToken = 0;
+async function startGame() {
   if (S.raceType === 'users') { showMenuPage('race'); toast('ONLINE MULTIPLAYER IS NOT AVAILABLE YET'); return; }
+  const token = ++raceStartToken;
   $('pauseOverlay').classList.add('hidden');
   $('leaderboard').classList.add('hidden');
   $('shareBtn').classList.add('hidden');
+  $('raceCountdown').classList.remove('hidden');
   const mission = S.gm === 'missions' ? MISSIONS[S.missionIdx] : null;
-  resetRun('playing');
+  resetRun('countdown');
   S.st = effStats(CARS[S.carIdx]);
   S.mission = mission;
   S.tw = mission ? mission.tw : (S.gm !== 'missions' && S.twoWay);
-  S.x = laneX(S.tw ? 2 : 1); // two-way road: start in a same-direction lane
+  S.x = laneX(S.tw ? 2 : 1);
   S.curBiome = mission ? mission.biome : 'highway';
   world.reset(S.curBiome); world.setTwoWay(S.tw); world.setSnow(S.curBiome === 'snow' ? 1 : 0);
   traffic.setTwoWay(S.tw); traffic.setDifficulty(mission ? mission.diff : 0); traffic.reset(S.z);
@@ -341,8 +347,21 @@ function startGame() {
   pickups.reset(); pickups.group.visible = true;
   if (S.gm === 'time') { S.timeLeft = 60; world.setCheckpoint(S.cpZ); } else if (mission) S.timeLeft = mission.time;
   overlay.classList.add('hidden');
-  $('pauseBtn').classList.remove('hidden');
+  $('pauseBtn').classList.add('hidden');
   $('coinBal').classList.add('hidden');
+
+  const value = $('countdownValue');
+  for (const n of ['3', '2', '1', 'GO!']) {
+    if (token !== raceStartToken || S.mode !== 'countdown') return;
+    value.textContent = n;
+    $('raceCountdown').classList.toggle('go', n === 'GO!');
+    await new Promise((resolve) => setTimeout(resolve, n === 'GO!' ? 420 : 850));
+  }
+  if (token !== raceStartToken || S.mode !== 'countdown') return;
+  $('raceCountdown').classList.add('hidden');
+  $('raceCountdown').classList.remove('go');
+  S.mode = 'playing';
+  $('pauseBtn').classList.remove('hidden');
   sfx.start();
   sfx.setMuted(sfx.muted); if (sfx.music) sfx.setMusic(true);
   toast(mission ? mission.title : 'GO!');
