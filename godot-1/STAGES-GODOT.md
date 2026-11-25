@@ -29,7 +29,7 @@ Portable hand-off file. Copy it with the repo (or alone) into any AI chat / plat
 ## 3. Status board
 | Stage | Name | Status |
 |---|---|---|
-| G1 | Foundation: renderer, light, road, terrain, car, HUD, driving | **DONE (written, not yet run)** |
+| G1 | Foundation: renderer, light, road, terrain, car, HUD, driving | **IN PROGRESS (written, unverified)** |
 | G2 | Real assets and materials | next |
 | G3 | Traffic and game rules port | planned |
 | G4 | Vehicle feel and effects | planned |
@@ -44,7 +44,7 @@ Portable hand-off file. Copy it with the repo (or alone) into any AI chat / plat
 STAGES.md            historical Three.js feature/reference record for porting
 STAGES-GODOT.md      active Godot migration and upgrade plan
 godot-1/godot/
-  project.godot      Forward+ , MSAA 4x, 4096 shadow atlas, landscape, mouse emulates touch
+  project.godot      Forward+ , runtime MSAA 0/2x/4x quality tiers, landscape, mouse emulates touch
   main.tscn          one Node3D that runs scripts/main.gd
   scripts/
     main.gd          state, input actions, driving physics (port of driveFrame), camera, loop
@@ -85,7 +85,7 @@ What exists
 
 How to run
 1. Install Godot **4.3 or newer** (standard build). Open `godot-1/godot/project.godot`, press F5. (Terminal: `godot --path godot-1/godot`.)
-2. Syntax smoke test without a window: `godot --headless --path godot --quit-after 60` — it must print no `SCRIPT ERROR` / `Parse Error`.
+2. Syntax smoke test without a window: `godot --headless --path godot-1/godot --quit-after 60` — it must print no `SCRIPT ERROR` / `Parse Error`.
 3. Keys: W/Up gas, S/Down/Space brake, A D / arrows steer, Shift/E nitro, T time of day, Q quality, R restart, H help, Esc quit.
 
 G1 acceptance checklist (tick these, fix what fails, then mark G1 verified here)
