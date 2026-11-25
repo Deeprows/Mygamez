@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildCar, spinWheels, CAR_L } from './car.js';
+import { buildCar, spinWheels, CAR_L, STYLE_KEYS } from './car.js';
 import { LANES, laneX } from './world.js';
 
 const COLORS = [0xf2c500, 0xd01818, 0x2e6bff, 0x8f2bd1, 0xf4f4f4, 0x1c1c1c, 0xff7a00, 0x11a36a, 0xb0b5bb];
@@ -9,7 +9,7 @@ export class Traffic {
     this.group = new THREE.Group();
     this.cars = [];
     for (let i = 0; i < count; i++) {
-      const mesh = buildCar(COLORS[i % COLORS.length], { spoiler: Math.random() < 0.3 });
+      const mesh = buildCar(COLORS[i % COLORS.length], { style: STYLE_KEYS[i % STYLE_KEYS.length], spoiler: Math.random() < 0.3 });
       this.group.add(mesh);
       this.cars.push({ mesh, lane: 0, speed: 20, base: 20, passed: false, hit: false, vx: 0, spinV: 0, minDx: 99 });
     }

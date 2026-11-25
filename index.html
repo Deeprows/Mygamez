@@ -39,10 +39,20 @@
 
   <div id="overlay">
     <h1 id="title">HIGHWAY RACER 3D</h1>
-    <p id="msg">Dodge traffic. Chain near misses. Hit 220 km/h.
-Drag the wheel to steer, hold the right pedal to go.
-Keyboard: Arrow keys or WASD, Space to brake.</p>
-    <button id="start">START</button>
+    <p id="msg"></p>
+    <div id="garage">
+      <div class="carrow"><button id="prevCar" class="arrow">&#8249;</button><div id="carName">STRIKER</div><button id="nextCar" class="arrow">&#8250;</button></div>
+      <div class="bars">
+        <div class="bar"><span>SPEED</span><b><i id="bSpeed"></i></b></div>
+        <div class="bar"><span>ACCEL</span><b><i id="bAcc"></i></b></div>
+        <div class="bar"><span>HANDLING</span><b><i id="bHnd"></i></b></div>
+      </div>
+      <div id="swatches"></div>
+    </div>
+    <div class="row">
+      <button id="garageBtn" class="ghost hidden">GARAGE</button>
+      <button id="start">START</button>
+    </div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

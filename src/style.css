@@ -32,3 +32,21 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;font-family:sy
 #overlay button{font:800 20px system-ui;letter-spacing:.1em;color:#fff;background:linear-gradient(#26c3ff,#0a82d8);border:0;border-radius:14px;padding:14px 44px;box-shadow:0 8px 24px #0a82d877;cursor:pointer}
 #overlay button:active{transform:translateY(2px)}
 #overlay.hidden{display:none}
+
+/* ---- Stage 2: garage ---- */
+#overlay{justify-content:flex-end;padding-bottom:max(env(safe-area-inset-bottom),24px);background:linear-gradient(#0b122000 25%,#0b1220f0 100%)}
+#overlay.over{justify-content:center;background:linear-gradient(#0b1220aa,#0b1220dd)}
+.hidden{display:none !important}
+#garage{display:flex;flex-direction:column;align-items:center;gap:12px;width:min(420px,92vw)}
+.carrow{display:flex;align-items:center;justify-content:space-between;width:100%}
+#carName{font-size:clamp(22px,6vw,34px);font-weight:900;letter-spacing:.14em}
+.arrow{font:700 34px system-ui;width:56px;height:56px;line-height:1;border-radius:50%;border:2px solid #fff6;background:#ffffff14;color:#fff;padding:0;cursor:pointer;box-shadow:none}
+.bars{width:100%;display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:10px;font-size:12px;letter-spacing:.12em;opacity:.9;text-align:left}
+.bar b{display:block;height:8px;border-radius:4px;background:#ffffff22;overflow:hidden}
+.bar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#26c3ff,#7cf0ff);transition:width .25s}
+#swatches{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.sw{width:30px;height:30px;border-radius:50%;border:3px solid #fff4;padding:0;cursor:pointer;box-shadow:none}
+.sw.on{border-color:#fff;transform:scale(1.15)}
+.row{display:flex;gap:12px}
+#overlay button.ghost{background:#ffffff18;border:2px solid #fff6;box-shadow:none}

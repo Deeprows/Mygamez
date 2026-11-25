@@ -9,7 +9,8 @@ Look target: traffic highway, chase cam, speedometer top-left (KM/H + gear), ste
 | index.html | Canvas + HUD DOM (speedo canvas, wheel SVG, pedals, overlay) |
 | src/main.js | Renderer, lights, game state `S`, physics, collisions, camera, main loop |
 | src/world.js | Sky dome, clouds, mountains, recycled road segments, instanced trees, lamps, barriers. Exports lane constants |
-| src/car.js | Procedural car builder `buildCar(color,{spoiler})`, `spinWheels` |
+| src/car.js | Procedural car builder `buildCar(color,{style,spoiler})`, `spinWheels` |
+| src/cars.js | Car catalog, colours, GLB loader |
 | src/traffic.js | Traffic cars, spawn/recycle, car-following, hit tumble |
 | src/controls.js | Keyboard + touch wheel + pedals -> `steer(-1..1) gas brake` |
 | src/hud.js | Canvas speedometer (arc, ticks, number, gear) |
@@ -20,7 +21,7 @@ Look target: traffic highway, chase cam, speedometer top-left (KM/H + gear), ste
 - Player travels toward **-Z**. Car front faces -Z. Ground y=0. Units = metres, speed = m/s (HUD = x3.6).
 - 4 lanes, `laneX(i)`, lane width 3.6 m, `PLAYER_BOUND` = max |x| for the player.
 - World is recycled: segments of 60 m jump forward when 120 m behind the player. No floating-origin reset (fine for ~100 km sessions).
-- A car model must expose `userData.wheels[]` (pivot groups spun on X) and `userData.tail` (brake-light material).
+- A car model must expose `userData.wheels[]` (spun on X), `userData.steerers[]` (front groups, rotated on Y, may be empty) and `userData.tail` (brake-light material).
 - Tuning constants live at the top of `driveFrame` in main.js (accel, drag, steering speed) and in `MAX_SPEED`.
 
 ## STAGE 1 — DONE (this commit)
@@ -29,12 +30,13 @@ barriers; 4-lane road; player sports car; 12 AI traffic cars with car-following;
 camera shake, red flash; near-miss bonus; score/distance/best (localStorage); speedometer HUD; touch wheel + pedals;
 keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 
-## STAGE 2 — NEXT: real models + better handling
-- Replace procedural cars with glTF/GLB (free CC0: Kenney Car Kit, Quaternius). Load with `GLTFLoader`, Draco optional. Keep the `userData` contract above. Put files in `public/models/`, use relative URLs (`./models/x.glb`) so Pages works.
-- Add garage screen: pick car colour/model, save in localStorage.
-- Handling: yaw-based steering (heading angle + lateral grip) instead of direct lateral velocity; drift on brake+steer.
-- Optional real physics: `@dimforge/rapier3d-compat` (raycast vehicle) if you want a simulation feel.
-- Done when: 3+ selectable cars, wheels steer visually, no regressions in crash logic.
+## STAGE 2 — DONE: garage, car catalog, glTF pipeline, new handling
+- `src/cars.js`: catalog (`CARS`), colours, `loadCar()` (GLTFLoader with procedural fallback), auto-normalises GLB size/pivot, finds wheel nodes, recolours body materials.
+- 3 distinct procedural cars (Striker sport, Bruiser muscle with stripes, Phantom hyper with wing); traffic uses the same 3 body styles.
+- Garage screen (arrows, stat bars, colour swatches), saved in localStorage `hr3d-car`; GARAGE button after a crash.
+- Per-car stats drive physics: `top` (max m/s), `acc` (accel multiplier), `hnd` (steering multiplier).
+- Handling rewrite (main.js `driveFrame`): heading angle `psi` with speed-sensitive max heading, front wheels steer visually, drift = hold brake + steer hard above ~80 km/h (wider heading, body slip, speed scrub, drift score).
+- NOT done from the original Stage 2 plan: no real GLB files are bundled (build environment had no internet). Drop your own in `public/models/` (see README there). Rapier physics skipped on purpose: arcade model is simpler and lighter on phones.
 
 ## STAGE 3 — Feel & polish
 - Post-processing (`EffectComposer`): bloom on lights, subtle motion blur / radial speed blur above 150 km/h, vignette.
@@ -62,6 +64,6 @@ keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 - Audio starts only after tapping START (browser autoplay rule).
 
 ## Hand-off prompt (paste into any AI/platform with the repo)
-"I have a Three.js + Vite endless highway racer (see README.md and STAGES.md). Stage 1 is done. Implement Stage N from STAGES.md.
+"I have a Three.js + Vite endless highway racer (see README.md and STAGES.md). Stages 1-2 are done. Implement Stage N from STAGES.md.
 Keep conventions (player moves -Z, metres, car userData contract), keep deploy.yml working with `base: './'`, return full code for
 every changed file with its path, and update STAGES.md marking what was completed and what is next."
