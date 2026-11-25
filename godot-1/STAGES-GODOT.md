@@ -1,14 +1,14 @@
 # STAGES-GODOT — Highway Racer: Realistic (Godot 4) track
 
 Portable hand-off file. Copy it with the repo (or alone) into any AI chat / platform and say "continue from the next stage".
-Companion file: `STAGES.md` (the original Three.js build, Stages 1-4 done). This file does NOT replace it.
+`STAGES.md` documents the original Three.js implementation (Stages 1-4) and is retained only as a feature/reference record during migration. This Godot plan is the active plan for the existing Highway Racer 3D game.
 
 ## 0. Where we are (read this first)
-- Original game: **Highway Racer 3D**, Three.js + Vite, Stages 1-4 done (`STAGES.md`).
-- **Stage 5 (Ship it) is ON HOLD** on purpose. Full text is kept in section 8. We resume it after the realism track.
-- Current work: a **more realistic version in Godot 4 (Forward+ 3D renderer)**, in the folder `godot/`.
-  Stages here are named **G1, G2, ...** so they never clash with the old Stage numbers.
-- **G1 is written but has never been run** (it was authored in an environment with no Godot and no internet). First job in any new session: open it, run it, fix whatever the Output panel says. See section 6.
+- Existing game: **Highway Racer 3D**. Its original Three.js + Vite implementation (Stages 1-4) is documented in `STAGES.md`; use it as the source of existing features and behaviour to port.
+- **Migration target: Godot 4 (GDScript).** Godot replaces Three.js as the game engine and becomes the only maintained game implementation. Do not create a separate Godot game or keep Three.js as a parallel/lite game.
+- The Godot project currently lives at `godot-1/godot/` in this repository. The G1-G8 stages below describe migration and upgrade of the existing Highway Racer 3D game.
+- **G1 is written but has never been run** (it was authored in an environment with no Godot and no internet). First job: open the project, run it, fix what the Output panel reports, and complete the G1 acceptance checklist in section 6 before moving on.
+- Stage 5 from the old Three.js plan is superseded by the Godot migration plan. Its useful product requirements should be carried into the Godot implementation where applicable; do not resume the old Three.js PWA/Capacitor build.
 
 ## 1. Look targets
 - Reference A (orange sports car, drifting, desert track): realistic sun, long shadows, tyre smoke, kerbs, palm/rock backdrop, sharp reflections on the paint, atmospheric haze, mountains.
@@ -20,7 +20,7 @@ Companion file: `STAGES.md` (the original Three.js build, Stages 1-4 done). This
 |---|---|
 | Engine: **Godot 4.3+**, GDScript | Free, PBR, SSR/SSAO/volumetric fog, soft shadows, glTF native, exports to Windows/Linux/macOS/Android |
 | Renderer: **Forward+** for development/desktop; **Mobile** renderer for phones | Realism features (SSR, SSAO, SSIL, SDFGI, volumetric fog) are Forward+ only. Mobile keeps PBR, shadows, glow, fog |
-| **Web export is NOT the target** | Godot 4 web builds use the Compatibility renderer only (as of 4.3), which loses most of the realistic effects. The old Three.js build stays the web version |
+| **Godot replaces the Three.js runtime** | Do not retain Three.js as a second/lite game. Godot export targets, including whether a web build can meet the required visual/performance quality, must be validated during G8; do not claim web support until an actual export is tested |
 | Driving = arcade model ported from `src/main.js` | Same feel as the existing game, light on phones. Rapier/VehicleBody3D deliberately not used yet |
 | No downloaded assets in G1 (procedural materials + procedural car) | Build env had no internet. G2 swaps in real CC0 assets |
 | No SDFGI | World is recycled/moving; SDFGI wants static geometry. Revisit in G5 |
@@ -37,13 +37,13 @@ Companion file: `STAGES.md` (the original Three.js build, Stages 1-4 done). This
 | G6 | Biomes and track pieces (desert like Reference A) | planned |
 | G7 | Game structure port (menu, garage, shop, modes, save) | planned |
 | G8 | Audio, performance, export | planned |
-| Stage 5 | Ship it (PWA / leaderboard / wrap) | **ON HOLD** (section 8) |
+| Legacy Stage 5 | Old Three.js PWA / Capacitor ship work | **SUPERSEDED** by Godot migration |
 
 ## 4. Repo layout
 ```
-STAGES.md            original Three.js stages (1-4 done, 5 on hold)
-STAGES-GODOT.md      this file
-godot/
+STAGES.md            historical Three.js feature/reference record for porting
+STAGES-GODOT.md      active Godot migration and upgrade plan
+godot-1/godot/
   project.godot      Forward+ , MSAA 4x, 4096 shadow atlas, landscape, mouse emulates touch
   main.tscn          one Node3D that runs scripts/main.gd
   scripts/
@@ -84,7 +84,7 @@ What exists
 - NOT in G1: traffic, collisions, score, modes, menu, shop, audio, particles, real assets.
 
 How to run
-1. Install Godot **4.3 or newer** (standard build). Open `godot/project.godot`, press F5. (Terminal: `godot --path godot`.)
+1. Install Godot **4.3 or newer** (standard build). Open `godot-1/godot/project.godot`, press F5. (Terminal: `godot --path godot-1/godot`.)
 2. Syntax smoke test without a window: `godot --headless --path godot --quit-after 60` — it must print no `SCRIPT ERROR` / `Parse Error`.
 3. Keys: W/Up gas, S/Down/Space brake, A D / arrows steer, Shift/E nitro, T time of day, Q quality, R restart, H help, Esc quit.
 
@@ -146,16 +146,13 @@ Each stage: goal, tasks, done-when. Keep each one shippable.
 - Export: Windows/Linux/macOS, **Android with the Mobile renderer** (needs Android SDK + JDK + export templates). Target 60 fps on a mid phone at MED.
 - Then **resume Stage 5** (section 8), re-scoped.
 
-## 8. STAGE 5 — Ship it  (ON HOLD — original text kept)
-Original plan for the Three.js build:
-- PWA (manifest + service worker), fullscreen + orientation lock to landscape, pause menu.
-- Online leaderboard (Supabase/Firebase free tier), share-score button.
-- Wrap to Android/iOS with Capacitor (`npx cap add android`) using the `dist` folder.
-- Performance pass: quality setting (shadow size, pixel ratio, traffic count, tree count); target 60 fps on mid phones.
+## 8. Shipping requirements — Godot game only
+The old Three.js Stage 5 PWA/Capacitor instructions are historical and are not the shipping plan for this migration. The existing game is being replaced by the Godot implementation; do not build or maintain a separate Three.js lite version.
 
-When we resume, decide first which build ships:
-- **Option A (Godot is the main game):** PWA/Capacitor no longer apply to the realistic build. Keep: pause menu, leaderboard (HTTP requests from Godot), share-score, perf pass, Android export (G8). Keep the Three.js PWA as the "lite" web version.
-- **Option B (both):** do the PWA/Capacitor work on the Three.js build exactly as written above, and ship Godot separately.
+- Carry forward applicable player-facing requirements from the old Stage 5, including fullscreen/landscape behaviour, pause, leaderboard and score sharing, in the Godot game where supported.
+- G8 is responsible for validating performance and preparing the required Godot exports. The Godot web export uses the Compatibility renderer and may not support the Forward+ visual effects described in this plan. Test the actual export and its quality before deciding whether it can replace the current GitHub Pages game.
+- Until a Godot export has been built and tested successfully, the existing Pages deployment must not be described as running the Godot game. Do not remove the existing working deployment prematurely.
+- Final delivery target is one Highway Racer 3D game powered by Godot. The exact export/deployment arrangement must be based on tested Godot builds, not assumptions.
 
 ## 9. Asset sourcing and licences (fill in as assets are added)
 Prefer CC0. Always keep a line here per asset: name, source URL, licence, author, where used.
@@ -167,10 +164,11 @@ Prefer CC0. Always keep a line here per asset: name, source URL, licence, author
 | (none yet, G1 is fully procedural) | | | |
 
 ## 10. Hand-off prompt (paste into any AI/platform with the repo)
-"I have a Three.js + Vite highway racer (STAGES.md, Stages 1-4 done, Stage 5 ON HOLD) and a Godot 4 realism build in `godot/` (STAGES-GODOT.md).
+"I am migrating the existing Highway Racer 3D game from Three.js to Godot 4. The Three.js files and STAGES.md are historical feature/reference material for porting; Godot is to become the sole game implementation, not a separate game or parallel lite version. The Godot project is in `godot-1/godot/`; the active plan is `godot-1/STAGES-GODOT.md`.
 Read STAGES-GODOT.md fully. Continue with stage G__ (first run G1's checklist if it is not marked verified).
-Rules: Godot 4.3+ GDScript, Forward+ renderer, keep the conventions in section 5 (player moves -Z, metres, car contract, no class_name, preload constants).
+Rules: Godot 4.3+ GDScript, follow the renderer/export decisions and conventions in this file, and preserve existing game features by using STAGES.md and the original source as references. Do not invent unrelated features.
 Return full code for every changed or new file with its path, say exactly what to click/run to test it, and update STAGES-GODOT.md: mark what is done, what is verified, what changed, and what is next."
 
 ## 11. Change log
 - G1 written: Godot project, atmosphere + quality tiers, procedural road/terrain/trees, procedural car, HUD + touch controls, arcade driving port, speed blur. Unverified.
+- Migration direction clarified: Godot is to replace the Three.js runtime for the existing Highway Racer 3D game; Three.js documentation/source is retained only as a porting reference.
