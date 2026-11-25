@@ -27,8 +27,8 @@ const S = {
 };
 const M = {
   tire: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 }),
-  rim: new THREE.MeshStandardMaterial({ color: 0xcfd4da, metalness: 0.9, roughness: 0.3 }),
-  glass: new THREE.MeshStandardMaterial({ color: 0x0b1a28, metalness: 0.9, roughness: 0.08 }),
+  rim: new THREE.MeshPhysicalMaterial({ color: 0xcfd4da, metalness: 0.92, roughness: 0.24, clearcoat: 0.35, clearcoatRoughness: 0.2 }),
+  glass: new THREE.MeshPhysicalMaterial({ color: 0x0b1a28, metalness: 0.42, roughness: 0.16, clearcoat: 1, clearcoatRoughness: 0.08, reflectivity: 0.9 }),
   dark: new THREE.MeshStandardMaterial({ color: 0x0c0c0c, roughness: 0.6 }),
   head: new THREE.MeshBasicMaterial({ color: 0xfff2c0 }),
   stripe: new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.4 }),
@@ -65,7 +65,7 @@ export function buildCar(color, { style = 'sport', spoiler = false, indicators =
   const P = STYLES[style] || STYLES.sport;
   const G = geos(STYLES[style] ? style : 'sport');
   const g = new THREE.Group();
-  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.28 });
+  const paint = new THREE.MeshPhysicalMaterial({ color, metalness: 0.68, roughness: 0.24, clearcoat: 0.9, clearcoatRoughness: 0.16, reflectivity: 0.72 });
   const tail = new THREE.MeshBasicMaterial({ color: 0xaa1010 });
 
   const add = (geo, mat, x, y, z, cast = true) => {
@@ -170,7 +170,7 @@ function boxAdder(g) {
 /** Cab-over box truck, 9 m. Same userData contract as buildCar (+ wr = wheel radius, indL/indR). */
 export function buildTruck(color, cargoColor = 0xe9e9e9) {
   const g = new THREE.Group(), add = boxAdder(g);
-  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.4 });
+  const paint = new THREE.MeshPhysicalMaterial({ color, metalness: 0.58, roughness: 0.3, clearcoat: 0.72, clearcoatRoughness: 0.2 });
   const box = new THREE.MeshStandardMaterial({ color: cargoColor, roughness: 0.7 });
   const tail = new THREE.MeshBasicMaterial({ color: 0xaa1010 });
   add(2.2, 0.35, 8.8, M.dark, 0, 0.65, 0, false);          // chassis
@@ -191,7 +191,7 @@ export function buildTruck(color, cargoColor = 0xe9e9e9) {
 /** City bus, 10.8 m. */
 export function buildBus(color) {
   const g = new THREE.Group(), add = boxAdder(g);
-  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.45 });
+  const paint = new THREE.MeshPhysicalMaterial({ color, metalness: 0.5, roughness: 0.32, clearcoat: 0.72, clearcoatRoughness: 0.22 });
   const tail = new THREE.MeshBasicMaterial({ color: 0xaa1010 });
   add(2.3, 0.3, 10.5, M.dark, 0, 0.5, 0, false);           // underbody
   add(2.5, 2.7, 10.8, paint, 0, 1.95, 0);                  // body
