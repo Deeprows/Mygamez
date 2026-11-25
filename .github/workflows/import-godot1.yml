@@ -1,0 +1,37 @@
+name: Import Godot 1 Project
+on:
+  push:
+    paths:
+      - ".godot1-import-trigger"
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Extract Godot project
+        run: |
+          mkdir -p godot-1
+          unzip -o "Godot 1/Mygamez-godot-G1.zip" -d /tmp/godot1
+          rsync -a /tmp/godot1/ godot-1/
+          test -f godot-1/godot/project.godot
+          test -f godot-1/godot/main.tscn
+          test -f godot-1/godot/scripts/main.gd
+          echo "Imported files:"
+          find godot-1 -type f | sort
+          npm install
+          npm run build
+      - name: Commit imported Godot project
+        run: |
+          rm -f .godot1-import-trigger .github/workflows/import-godot1.yml .godot1-inspect-trigger .github/workflows/inspect-godot1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Godot 1 game project"
+          git push
