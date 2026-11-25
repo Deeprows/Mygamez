@@ -203,3 +203,11 @@ body:has(#overlay:not(.hidden)) #btns{display:none}
 .multiplayer-notice{padding:12px 13px;border:1px solid #c49b5a55;border-radius:9px;background:#c49b5a12;color:#e1c99f;font-size:11px;line-height:1.5}
 #overlay #start:disabled{opacity:.55;filter:saturate(.45);cursor:not-allowed}
 @media(max-width:360px){.race-types{grid-template-columns:1fr}.race-type-card{min-height:0}}
+
+/* Race start countdown */
+#raceCountdown{position:fixed;z-index:120;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;pointer-events:none;background:radial-gradient(ellipse at center,#07111db8 0%,#07111d55 38%,transparent 72%);text-shadow:0 8px 35px #000}
+#raceCountdown.hidden{display:none}
+#countdownValue{font-size:clamp(76px,22vw,150px);font-weight:1000;line-height:.9;letter-spacing:-.06em;color:#f0d5a4;-webkit-text-stroke:1px #ffffff35;animation:countPulse .82s ease-out both}
+#raceCountdown small{font-size:11px;font-weight:900;letter-spacing:.38em;color:#e4e9ee}
+#raceCountdown.go #countdownValue{font-size:clamp(54px,16vw,104px);color:#ffffff}
+@keyframes countPulse{0%{transform:scale(1.35);opacity:.35}45%{transform:scale(1);opacity:1}100%{transform:scale(.92);opacity:1}}
