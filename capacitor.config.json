@@ -1,0 +1,6 @@
+{
+  "appId": "com.deeprows.highwayracer",
+  "appName": "Highway Racer 3D",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" }
+}
