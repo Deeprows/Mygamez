@@ -361,7 +361,8 @@ function finish(reason) {
   setTimeout(() => {
     $('title').textContent = title;
     $('msg').textContent = lines.join('\n');
-    $('menuBox').classList.add('hidden');
+    showMenuPage('home');
+    $('menuBox').classList.remove('hidden');
     $('garageBtn').classList.remove('hidden');
     $('coinBal').classList.remove('hidden');
     $('start').textContent = btn;
