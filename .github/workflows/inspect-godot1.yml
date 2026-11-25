@@ -1,0 +1,22 @@
+name: Inspect Godot 1 archive
+on:
+  push:
+    paths:
+      - ".godot1-inspect-trigger"
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect archive contents
+        run: |
+          echo "=== ZIP FILE LIST ==="
+          unzip -l "Godot 1/Mygamez-godot-G1.zip"
+          echo "=== ROOT FILES ==="
+          mkdir -p /tmp/godot1
+          unzip -q "Godot 1/Mygamez-godot-G1.zip" -d /tmp/godot1
+          find /tmp/godot1 -maxdepth 3 -type f | sort | head -200
+          echo "=== GODOT PROJECT FILES ==="
+          find /tmp/godot1 -name project.godot -o -name export_presets.cfg -o -name index.html
