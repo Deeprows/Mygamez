@@ -14,7 +14,10 @@ Look target: traffic highway, chase cam, speedometer top-left (KM/H + gear), ste
 | src/traffic.js | Traffic cars, spawn/recycle, car-following, hit tumble |
 | src/controls.js | Keyboard + touch wheel + pedals -> `steer(-1..1) gas brake` |
 | src/hud.js | Canvas speedometer (arc, ticks, number, gear) |
-| src/audio.js | WebAudio engine synth + crash noise |
+| src/audio.js | WebAudio: engine, skid, nitro, crash, horn, synth music |
+| src/post.js | Bloom, speed blur, vignette, quality levels |
+| src/particles.js | Smoke / spark particle pools |
+| src/tod.js | Day / sunset / night presets |
 | .github/workflows/deploy.yml | Build + deploy to Pages |
 
 ## Conventions (keep these when changing things)
@@ -38,12 +41,14 @@ keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 - Handling rewrite (main.js `driveFrame`): heading angle `psi` with speed-sensitive max heading, front wheels steer visually, drift = hold brake + steer hard above ~80 km/h (wider heading, body slip, speed scrub, drift score).
 - NOT done from the original Stage 2 plan: no real GLB files are bundled (build environment had no internet). Drop your own in `public/models/` (see README there). Rapier physics skipped on purpose: arcade model is simpler and lighter on phones.
 
-## STAGE 3 — Feel & polish
-- Post-processing (`EffectComposer`): bloom on lights, subtle motion blur / radial speed blur above 150 km/h, vignette.
-- Particles: tyre smoke, sparks on barrier scrape, crash debris. Speed lines.
-- Nitro: boost button (third pedal), FOV kick, FOV/blur effect, cooldown bar.
-- Audio: replace synth with samples (engine loop pitch-shifted, skid, horn, music), mute button, volume setting.
-- Headlights + night/sunset time-of-day presets (change sky uniforms, fog colour, sun colour).
+## STAGE 3 — DONE: feel & polish
+- `src/post.js`: EffectComposer (4x MSAA, half-float): bloom (HIGH only), radial speed blur + vignette (MED/HIGH), OutputPass tone mapping. Quality button cycles LOW (direct render) / MED / HIGH, saved as `hr3d-q`. Default MED on phones, HIGH on desktop.
+- `src/particles.js`: pooled soft-point particles. Tyre smoke (drift / hard braking), wall-scrape sparks, crash debris + smoke, nitro flames. Additive particles use HDR colours so they bloom.
+- Nitro: N2O button (3rd control) / Shift / E. Bar under health. +accel, +12 m/s over car top speed, FOV kick, speed lines, flames, shake. Refills slowly, +12 per near miss, +8/s while drifting; locks until 30% after emptying.
+- `src/tod.js`: Day / Sunset / Night presets (sky, fog, lights, env, stars, lamp + head/tail glow, bloom). Night/sunset turn on a SpotLight headlight. Button cycles, saved as `hr3d-tod`. Add a look by adding a key in `TOD` + `TODS`.
+- Audio (`src/audio.js`): engine now has nitro pitch, skid noise, nitro whoosh, horn (H), near-miss blip, optional procedural synth music (button, off by default), mute button. All saved in localStorage.
+- NOT done: real audio samples (no internet in build env; the synth stays, `audio.js` notes where to swap). Motion blur is radial only.
+- Perf levers if a phone struggles: set quality LOW, lower `Traffic` count and `TREES` in world.js, lower shadow map size in `applyQuality`.
 
 ## STAGE 4 — Game structure
 - Modes: Endless, Time Attack, Missions (overtake N cars, reach speed X, near-miss combo).
@@ -64,6 +69,6 @@ keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 - Audio starts only after tapping START (browser autoplay rule).
 
 ## Hand-off prompt (paste into any AI/platform with the repo)
-"I have a Three.js + Vite endless highway racer (see README.md and STAGES.md). Stages 1-2 are done. Implement Stage N from STAGES.md.
+"I have a Three.js + Vite endless highway racer (see README.md and STAGES.md). Stages 1-3 are done. Implement Stage N from STAGES.md.
 Keep conventions (player moves -Z, metres, car userData contract), keep deploy.yml working with `base: './'`, return full code for
 every changed file with its path, and update STAGES.md marking what was completed and what is next."

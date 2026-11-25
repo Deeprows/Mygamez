@@ -5,7 +5,7 @@ export class Hud {
   }
 
   draw(kmh) {
-    const c = this.c, W = this.W, cx = W / 2, cy = W / 2, R = W / 2 - 6, max = 240;
+    const c = this.c, W = this.W, cx = W / 2, cy = W / 2, R = W / 2 - 6, max = 280;
     const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;
     const f = Math.min(1, kmh / max);
     const gear = Math.max(1, Math.min(6, 1 + Math.floor(kmh / 45)));

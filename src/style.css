@@ -50,3 +50,16 @@ html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;font-family:sy
 .sw.on{border-color:#fff;transform:scale(1.15)}
 .row{display:flex;gap:12px}
 #overlay button.ghost{background:#ffffff18;border:2px solid #fff6;box-shadow:none}
+
+/* ---- Stage 3 ---- */
+#nitro{width:clamp(90px,18vmin,150px);height:8px;background:#0007;border-radius:4px;margin:6px 0 0 auto;overflow:hidden}
+#nitro i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#1e6bff,#5be1ff);transform-origin:left}
+#nitro.locked i{background:#667}
+.pedal.round{border-radius:50%;width:clamp(54px,11vmin,80px);height:clamp(54px,11vmin,80px);font:800 13px system-ui;color:#fff;letter-spacing:.05em;
+  background:radial-gradient(circle,#2a7bff,#0a2a8a);align-self:flex-end;margin-right:6px}
+#lines{position:fixed;inset:-15%;pointer-events:none;opacity:0;
+  background:repeating-conic-gradient(from 0deg at 50% 45%,#fff0 0 4deg,#ffffff38 4deg 4.7deg,#fff0 4.7deg 9deg);
+  -webkit-mask:radial-gradient(circle at 50% 45%,transparent 36%,#000 78%);mask:radial-gradient(circle at 50% 45%,transparent 36%,#000 78%)}
+#btns{position:fixed;top:max(env(safe-area-inset-top),8px);left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:7}
+#btns button{min-width:38px;height:34px;padding:0 10px;border-radius:17px;border:1.5px solid #fff5;background:#0b122099;color:#fff;font:700 12px system-ui;letter-spacing:.06em;cursor:pointer}
+#btns button.off{opacity:.45}

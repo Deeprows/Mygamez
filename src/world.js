@@ -78,7 +78,7 @@ export class World {
 
     // ---- clouds ----
     this.clouds = new THREE.Group();
-    const cm = new THREE.SpriteMaterial({ map: makeCloudTexture(), transparent: true, depthWrite: false, fog: false, opacity: 0.9 });
+    const cm = this.cloudMat = new THREE.SpriteMaterial({ map: makeCloudTexture(), transparent: true, depthWrite: false, fog: false, opacity: 0.9 });
     for (let i = 0; i < 16; i++) {
       const s = new THREE.Sprite(cm);
       s.scale.set(160 + Math.random() * 160, 50 + Math.random() * 40, 1);
@@ -89,7 +89,7 @@ export class World {
 
     // ---- mountains (follow player Z, so they sit at the horizon forever) ----
     this.mountains = new THREE.Group();
-    const mm = new THREE.MeshLambertMaterial({ color: 0x6f8fb3, flatShading: true });
+    const mm = this.mountMat = new THREE.MeshLambertMaterial({ color: 0x6f8fb3, flatShading: true });
     for (let i = 0; i < 18; i++) {
       const r = 70 + Math.random() * 90, h = 50 + Math.random() * 90;
       const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 6), mm);
@@ -100,12 +100,24 @@ export class World {
     }
     scene.add(this.mountains);
 
+    // ---- stars (visible at night only) ----
+    const sp = new Float32Array(500 * 3);
+    for (let i = 0; i < 500; i++) {
+      const u = Math.random(), t = Math.random() * Math.PI * 2, r = Math.sqrt(1 - u * u);
+      sp[i * 3] = 700 * r * Math.cos(t); sp[i * 3 + 1] = 700 * u; sp[i * 3 + 2] = 700 * r * Math.sin(t);
+    }
+    const sg = new THREE.BufferGeometry();
+    sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+    this.stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.2, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+    this.stars.visible = false; this.stars.renderOrder = -9;
+    scene.add(this.stars);
+
     // ---- road segments (recycled forever) ----
     const roadMat = new THREE.MeshStandardMaterial({ map: makeRoadTexture(), roughness: 0.92, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     const grassMat = new THREE.MeshStandardMaterial({ color: 0x4f9a3c, roughness: 1 });
     const barrierMat = new THREE.MeshStandardMaterial({ color: 0xa4a9b0, roughness: 0.85 });
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x8a9096, metalness: 0.6, roughness: 0.5 });
-    const lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe0 });
+    const lampMat = this.lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe0 });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5b3a22, roughness: 1 });
     const leafMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
 
@@ -179,5 +191,15 @@ export class World {
     this.mountains.position.z = playerZ;
     this.sky.position.copy(camera.position);
     this.clouds.position.set(camera.position.x, 0, camera.position.z);
+    this.stars.position.copy(camera.position);
+  }
+
+  /** Time-of-day look (see tod.js). */
+  setLook(p) {
+    this.lampMat.color.setHex(0xfffbe0).multiplyScalar(p.lamp);
+    this.cloudMat.color.setHex(p.cloud);
+    this.mountMat.color.setHex(p.mount);
+    this.stars.material.opacity = p.stars;
+    this.stars.visible = p.stars > 0;
   }
 }

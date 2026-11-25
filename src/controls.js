@@ -7,7 +7,7 @@ export class Controls {
     this.keys = new Set();
     this.wheelAngle = 0;
     this.dragging = false;
-    this.padGas = false; this.padBrake = false;
+    this.padGas = false; this.padBrake = false; this.padNitro = false; this.nitro = 0;
     this.wheelEl = document.getElementById('wheel');
     this.svg = this.wheelEl.firstElementChild;
 
@@ -20,6 +20,7 @@ export class Controls {
 
     this._pedal('gas', 'padGas');
     this._pedal('brake', 'padBrake');
+    this._pedal('nitroBtn', 'padNitro');
     this._wheel();
   }
 
@@ -66,6 +67,7 @@ export class Controls {
     this.steer = this.wheelAngle / MAXW;
     this.gas = (k.has('ArrowUp') || k.has('KeyW') || this.padGas) ? 1 : 0;
     this.brake = (k.has('ArrowDown') || k.has('KeyS') || k.has('Space') || this.padBrake) ? 1 : 0;
+    this.nitro = (k.has('ShiftLeft') || k.has('ShiftRight') || k.has('KeyE') || this.padNitro) ? 1 : 0;
     this.svg.style.transform = `rotate(${this.wheelAngle}rad)`;
   }
 }

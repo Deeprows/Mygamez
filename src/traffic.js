@@ -16,6 +16,9 @@ export class Traffic {
     scene.add(this.group);
   }
 
+  /** Tail-light brightness multiplier (night glow). */
+  setGlow(k) { for (const c of this.cars) c.mesh.userData.tail.color.setHex(0xaa1010).multiplyScalar(k); }
+
   reset(pz) { for (const c of this.cars) this._spawn(c, pz, true); }
 
   _place(c, lane, z) {

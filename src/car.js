@@ -113,6 +113,9 @@ export function buildCar(color, { style = 'sport', spoiler = false } = {}) {
   return g;
 }
 
+/** Headlight brightness multiplier (>1 makes them bloom at night). */
+export function setHeadGlow(k) { M.head.color.setHex(0xfff2c0).multiplyScalar(k); }
+
 export function spinWheels(car, distance) {
   const a = distance / 0.36;
   for (const w of car.userData.wheels) w.rotation.x -= a;
