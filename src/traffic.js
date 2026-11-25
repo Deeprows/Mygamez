@@ -24,7 +24,7 @@ export class Traffic {
     this.group = new THREE.Group();
     this.cars = [];
     this.nCars = nCars;
-    this.diff = 0; this.twoWay = false; this.glow = 1; this.t = 0;
+    this.diff = 0; this.twoWay = false; this.glow = 1; this.t = 0; this.quality = 2;
     for (let i = 0; i < nCars; i++) {
       this._add('car', buildCar(COLORS[i % COLORS.length], { style: STYLE_KEYS[i % STYLE_KEYS.length], spoiler: Math.random() < 0.3, indicators: true }), i);
     }
@@ -50,6 +50,7 @@ export class Traffic {
     for (const c of this.cars) c.mesh.userData.tail.color.setHex(0xaa1010).multiplyScalar(k);
   }
   setDifficulty(d) { this.diff = d; }
+  setQuality(q) { this.quality = Math.max(0, Math.min(2, q)); }
   setTwoWay(on) { this.twoWay = on; }
 
   reset(pz) { for (const c of this.cars) this._spawn(c, pz, true); }
@@ -64,9 +65,10 @@ export class Traffic {
 
   _spawn(c, pz, initial) {
     let on;
-    if (c.type === 'car') on = c.idx < Math.round(this.nCars * (0.6 + 0.4 * this.diff));
-    else if (c.type === 'truck') on = Math.random() < 0.25 + this.diff * 0.5;
-    else on = Math.random() < 0.15 + this.diff * 0.4;
+    const density = [0.58, 0.82, 1][this.quality];
+    if (c.type === 'car') on = c.idx < Math.round(this.nCars * (0.6 + 0.4 * this.diff) * density);
+    else if (c.type === 'truck') on = Math.random() < (0.25 + this.diff * 0.5) * density;
+    else on = Math.random() < (0.15 + this.diff * 0.4) * density;
     if (!on) { this._off(c, pz); return; }
 
     for (let t = 0; t < 25; t++) {
