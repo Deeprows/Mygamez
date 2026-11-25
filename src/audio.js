@@ -6,7 +6,7 @@ export class Sfx {
   constructor() { this.ctx = null; this.muted = false; this.music = false; this.timer = 0; }
 
   start() {
-    if (this.ctx) { this.ctx.resume(); return; }
+    if (this.ctx) { this.ctx.resume(); if (this.music) this._musicStart(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = (this.ctx = new AC());
@@ -33,7 +33,10 @@ export class Sfx {
     this.musicBus = ctx.createGain(); this.musicBus.gain.value = 0.35; this.musicBus.connect(this.master);
     if (this.music) this._musicStart();
 
-    document.addEventListener('visibilitychange', () => { if (document.hidden) ctx.suspend(); else ctx.resume(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { this._musicStop(); ctx.suspend(); }
+      else { ctx.resume(); if (this.music) this._musicStart(); }
+    });
   }
 
   setMuted(m) {
@@ -58,6 +61,13 @@ export class Sfx {
     this.eng.gain.setTargetAtTime(on ? 0.04 + 0.04 * gas + 0.02 * nitro : 0, t, 0.1);
     this.skid.gain.setTargetAtTime(on ? skid * 0.11 : 0, t, 0.06);
     this.nit.gain.setTargetAtTime(on ? nitro * 0.09 : 0, t, 0.08);
+  }
+
+  pause() {
+    if (!this.ctx) return;
+    this.stop();
+    this._musicStop();
+    this.ctx.suspend();
   }
 
   stop() {
