@@ -95,6 +95,16 @@
 
       <section id="page-race" class="menu-page hidden">
         <div class="page-heading"><small>01 / RACE SETUP</small><h2>Choose your challenge</h2><p>Select a mode and configure the road.</p></div>
+        <div class="race-type-label">RACE OPPONENT</div>
+        <div id="raceTypes" class="race-types">
+          <button type="button" class="race-type-card selected" data-race-type="computer">
+            <span class="race-type-icon">&#9881;</span><b>VS COMPUTER</b><small>Race against AI traffic and computer-controlled opponents.</small>
+          </button>
+          <button type="button" class="race-type-card" data-race-type="users">
+            <span class="race-type-icon">&#9673;</span><b>USERS VS USERS</b><small>Challenge other players online in real time.</small><em>ONLINE MULTIPLAYER</em>
+          </button>
+        </div>
+        <div id="multiplayerNotice" class="multiplayer-notice hidden">Online multiplayer is not connected yet. The online room service must be added before player-versus-player races can start.</div>
         <div id="modes" class="tabs"></div>
         <div id="modeInfo"></div>
         <div id="missionPick" class="carrow hidden">
