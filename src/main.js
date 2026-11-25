@@ -55,6 +55,7 @@ const S = {
   health: 100, score: 0, dist: 0, shake: 0, pitch: 0, orbit: 0,
   // Stage 4: selected mode + per-run state
   gm: ['endless', 'time', 'missions'].includes(P.sel.gm) ? P.sel.gm : 'endless', // endless | time | missions
+  raceType: safeGet('hr3d-race-type') === 'users' ? 'users' : 'computer',
   missionIdx: clamp(Number(P.sel.mi) || 0, 0, MISSIONS.length - 1),
   twoWay: !!P.sel.tw, // menu toggle (endless / time attack)
   mission: null, tw: false, mul: 1, st: null, curBiome: 'highway', nextBiome: 2500, biomeIdx: 0,
@@ -184,6 +185,23 @@ document.querySelectorAll('#menuNav [data-menu-action]').forEach((b) => {
     }
   });
 });
+document.querySelectorAll('[data-race-type]').forEach((b) => {
+  b.addEventListener('click', () => {
+    S.raceType = b.dataset.raceType === 'users' ? 'users' : 'computer';
+    safeSet('hr3d-race-type', S.raceType);
+    document.querySelectorAll('[data-race-type]').forEach((item) => item.classList.toggle('selected', item === b));
+    $('multiplayerNotice').classList.toggle('hidden', S.raceType !== 'users');
+    $('start').disabled = S.raceType === 'users';
+    $('start').textContent = S.raceType === 'users' ? 'ONLINE MULTIPLAYER UNAVAILABLE' : 'START RACE →';
+  });
+});
+function refreshRaceType() {
+  document.querySelectorAll('[data-race-type]').forEach((b) => b.classList.toggle('selected', b.dataset.raceType === S.raceType));
+  $('multiplayerNotice').classList.toggle('hidden', S.raceType !== 'users');
+  $('start').disabled = S.raceType === 'users';
+  $('start').textContent = S.raceType === 'users' ? 'ONLINE MULTIPLAYER UNAVAILABLE' : 'START RACE →';
+}
+refreshRaceType();
 document.querySelectorAll('[data-setting]').forEach((b) => {
   b.addEventListener('click', () => $(b.dataset.setting)?.click());
 });
@@ -288,6 +306,7 @@ function resetRun(mode) {
 }
 function enterMenu() {
   showMenuPage('home');
+  refreshRaceType();
   $('pauseOverlay').classList.add('hidden');
   $('leaderboard').classList.add('hidden');
   $('shareBtn').classList.add('hidden');
@@ -305,6 +324,7 @@ function enterMenu() {
   menu.refresh();
 }
 function startGame() {
+  if (S.raceType === 'users') { showMenuPage('race'); toast('ONLINE MULTIPLAYER IS NOT AVAILABLE YET'); return; }
   $('pauseOverlay').classList.add('hidden');
   $('leaderboard').classList.add('hidden');
   $('shareBtn').classList.add('hidden');
