@@ -10,7 +10,24 @@ export const SEG_COUNT = 14;
 export const PLAYER_BOUND = TOTAL_W / 2 - 0.95 - 0.05;
 export const laneX = (i) => (i - (LANES - 1) / 2) * LANE_W;
 
-const TREES = 40; // per segment (half each side)
+const TREES = 40; // max trees per segment (half each side)
+const BLD = 12;   // city buildings per segment
+const ROCKS = 7;  // desert rocks per segment
+
+/**
+ * Scenery presets. Segments are re-scattered when they are recycled, so a biome change appears ahead of the player
+ * (about 840 m away, hidden by fog) and rolls in naturally. leaf = [hue, hueRange, sat, light, lightRange].
+ * Add a biome: add an entry here, add it to BIOMES order in main.js if you want it in the endless rotation.
+ */
+export const BIOME = {
+  highway: { label: 'COUNTRYSIDE', grass: 0x4f9a3c, leaf: [0.24, 0.12, 0.5, 0.22, 0.14], trees: 40, spread: 70, ts: [0.8, 1.0], bld: 0, rock: 0 },
+  city:    { label: 'CITY',        grass: 0x565b63, leaf: [0.30, 0.08, 0.45, 0.25, 0.10], trees: 8,  spread: 12, ts: [0.7, 0.6], bld: BLD, rock: 0 },
+  desert:  { label: 'DESERT',      grass: 0xd2a85c, leaf: [0.14, 0.06, 0.40, 0.30, 0.10], trees: 8,  spread: 90, ts: [0.5, 0.6], bld: 0, rock: ROCKS },
+  snow:    { label: 'SNOW',        grass: 0xe6edf2, leaf: [0.45, 0.10, 0.12, 0.72, 0.16], trees: 30, spread: 60, ts: [0.8, 1.0], bld: 0, rock: 0 },
+};
+export const BIOMES = Object.keys(BIOME);
+
+const SRGB = THREE.SRGBColorSpace;
 
 function makeRoadTexture() {
   const W = 512, H = 960;
@@ -36,6 +53,39 @@ function makeRoadTexture() {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 8;
+  return t;
+}
+
+function makeWindowTextures() {
+  const W = 128, H = 256, cols = 4, rows = 10;
+  const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+  const base = mk(), emi = mk();
+  const b = base.getContext('2d'), e = emi.getContext('2d');
+  b.fillStyle = '#4a5666'; b.fillRect(0, 0, W, H);
+  e.fillStyle = '#000'; e.fillRect(0, 0, W, H);
+  const cw = W / cols, ch = H / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = c * cw + cw * 0.2, y = r * ch + ch * 0.22, w = cw * 0.6, h = ch * 0.5;
+      const lit = Math.random() < 0.45;
+      b.fillStyle = lit ? '#c9d9e8' : '#27384d'; b.fillRect(x, y, w, h);
+      if (lit) { e.fillStyle = '#ffd68a'; e.fillRect(x, y, w, h); }
+    }
+  }
+  const tex = (cv) => { const t = new THREE.CanvasTexture(cv); t.colorSpace = SRGB; t.anisotropy = 4; return t; };
+  return { map: tex(base), emi: tex(emi) };
+}
+
+function makeSignTexture(text, bg, fg) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = bg; x.fillRect(0, 0, 512, 128);
+  x.strokeStyle = fg; x.lineWidth = 6; x.strokeRect(8, 8, 496, 112);
+  x.fillStyle = fg; x.font = '800 44px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 256, 66, 470);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = SRGB; t.anisotropy = 4;
   return t;
 }
 
@@ -120,6 +170,14 @@ export class World {
     const lampMat = this.lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe0 });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5b3a22, roughness: 1 });
     const leafMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, flatShading: true });
+    const medianMat = new THREE.MeshStandardMaterial({ color: 0xe8c020, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, flatShading: true });
+    const win = makeWindowTextures();
+    this.bldMat = new THREE.MeshStandardMaterial({ map: win.map, emissiveMap: win.emi, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.7, metalness: 0.1 });
+    this.boardEdge = new THREE.MeshStandardMaterial({ color: 0x0d4d2b, roughness: 0.7 });
+    const signMat = (t) => new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: 0.3, roughness: 0.6 });
+    this.signMats = ['EXIT 14  \u25b2  CITY CENTER', 'SERVICES  25 KM', 'HIGHWAY RACER  \u25b2  A1'].map((t) => signMat(makeSignTexture(t, '#0d6b3a', '#ffffff')));
+    this.poleMat = poleMat;
 
     const roadGeo = new THREE.PlaneGeometry(TOTAL_W, SEG_LEN).rotateX(-Math.PI / 2);
     const grassGeo = new THREE.PlaneGeometry(700, SEG_LEN).rotateX(-Math.PI / 2);
@@ -129,13 +187,36 @@ export class World {
     const lampGeo = new THREE.BoxGeometry(0.7, 0.14, 0.3);
     const trunkGeo = new THREE.CylinderGeometry(0.22, 0.34, 2.4, 6).translate(0, 1.2, 0);
     const leafGeo = new THREE.IcosahedronGeometry(1.8, 0).scale(1, 1.35, 1).translate(0, 3.9, 0);
+    const medianGeo = new THREE.PlaneGeometry(0.45, SEG_LEN).rotateX(-Math.PI / 2);
+    const bldGeo = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0); // scaled per instance (w, h, d)
+    const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+
+    this.biome = 'highway'; this._n = 0; this.twoWay = false;
+    this.snowK = 0; this.snowTarget = 0; this.tt = 0;
+    // checkpoint arch (time attack), placed by setCheckpoint()
+    this.cp = this._makeGantry(signMat(makeSignTexture('CHECKPOINT', '#f2c500', '#1b1b1b')));
+    this.cp.visible = false;
+    scene.add(this.cp);
+
+    // snowfall: flakes live in world space inside a box around the camera and wrap around it
+    const FLAKES = 360;
+    this.snowPos = new Float32Array(FLAKES * 3);
+    for (let i = 0; i < FLAKES; i++) { this.snowPos[i * 3] = (Math.random() - 0.5) * 44; this.snowPos[i * 3 + 1] = Math.random() * 18; this.snowPos[i * 3 + 2] = -Math.random() * 70; }
+    const sgeo = new THREE.BufferGeometry();
+    this.snowAttr = new THREE.BufferAttribute(this.snowPos, 3).setUsage(THREE.DynamicDrawUsage);
+    sgeo.setAttribute('position', this.snowAttr);
+    this.snowMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0, depthWrite: false });
+    this.snow = new THREE.Points(sgeo, this.snowMat);
+    this.snow.frustumCulled = false; this.snow.visible = false;
+    scene.add(this.snow);
 
     this.segs = [];
     for (let i = 0; i < SEG_COUNT; i++) {
       const seg = new THREE.Group();
       const road = new THREE.Mesh(roadGeo, roadMat); road.position.y = 0.04; road.receiveShadow = true;
-      const grass = new THREE.Mesh(grassGeo, grassMat); grass.position.y = -0.04; grass.receiveShadow = true;
-      seg.add(road, grass);
+      const grass = new THREE.Mesh(grassGeo, grassMat.clone()); grass.position.y = -0.04; grass.receiveShadow = true; // own material: colour per biome
+      const median = new THREE.Mesh(medianGeo, medianMat); median.position.y = 0.06; median.visible = false;
+      seg.add(road, grass, median);
       for (const s of [-1, 1]) {
         const b = new THREE.Mesh(barrierGeo, barrierMat);
         b.position.set(s * (TOTAL_W / 2 + 0.25), 0.4, 0);
@@ -150,38 +231,142 @@ export class World {
       const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, TREES);
       const foliage = new THREE.InstancedMesh(leafGeo, leafMat, TREES);
       trunks.frustumCulled = false; foliage.frustumCulled = false;
-      seg.add(trunks, foliage);
-      seg.userData = { trunks, foliage };
+      const bld = new THREE.InstancedMesh(bldGeo, this.bldMat, BLD); bld.frustumCulled = false; bld.visible = false;
+      const rock = new THREE.InstancedMesh(rockGeo, rockMat, ROCKS); rock.frustumCulled = false; rock.visible = false;
+      const gantry = this._makeGantry(this.signMats[0]); gantry.position.z = 21; gantry.visible = false;
+      seg.add(trunks, foliage, bld, rock, gantry);
+      seg.userData = { trunks, foliage, grass, median, bld, rock, gantry, biome: 'highway' };
       scene.add(seg);
       this.segs.push(seg);
     }
     this.reset();
   }
 
-  reset() {
+  /** Overhead gantry: two posts, a beam and a green sign board (front faces +Z, towards the oncoming player). */
+  _makeGantry(frontMat) {
+    const g = new THREE.Group();
+    const hw = TOTAL_W / 2 + 1.7;
+    for (const sx of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7.4, 0.5), this.poleMat);
+      post.position.set(sx * hw, 3.7, 0);
+      g.add(post);
+    }
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(hw * 2 + 0.5, 0.5, 0.5), this.poleMat);
+    beam.position.set(0, 7.3, 0);
+    const e = this.boardEdge;
+    const board = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 0.18), [e, e, e, e, frontMat, e]);
+    board.position.set(0, 5.9, 0);
+    g.add(beam, board);
+    g.userData.board = board;
+    return g;
+  }
+
+  reset(biome = 'highway') {
+    this.biome = BIOME[biome] ? biome : 'highway';
+    this._n = 0;
+    this.snowK = this.snowTarget = 0;
+    this.hideCheckpoint();
     this.segs.forEach((s, i) => { s.position.z = (2 - i) * SEG_LEN; this._scatter(s); });
   }
 
+  /** Biome used for segments recycled from now on (appears ahead of the player). */
+  setBiome(name) { if (BIOME[name]) this.biome = name; }
+  /** Biome of the road segment the player is on. */
+  biomeUnder(z) {
+    for (const s of this.segs) if (Math.abs(s.position.z - z) <= SEG_LEN / 2) return s.userData.biome;
+    return this.biome;
+  }
+  setTwoWay(on) { this.twoWay = on; for (const s of this.segs) s.userData.median.visible = on; }
+  setSnow(k) { this.snowTarget = k; }
+  setCheckpoint(z) { this.cp.position.z = z; this.cp.visible = true; }
+  hideCheckpoint() { this.cp.visible = false; }
+
   _scatter(seg) {
-    const { trunks, foliage } = seg.userData;
+    const u = seg.userData, b = BIOME[this.biome];
     const d = this._dummy, col = this._col;
-    for (let i = 0; i < TREES; i++) {
+    u.biome = this.biome;
+    u.grass.material.color.setHex(b.grass);
+
+    // trees
+    const n = b.trees;
+    u.trunks.count = u.foliage.count = n;
+    const [h0, hr, sat, l0, lr] = b.leaf;
+    for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1;
-      d.position.set(side * (TOTAL_W / 2 + 2.5 + Math.pow(Math.random(), 1.7) * 70), 0, (Math.random() - 0.5) * SEG_LEN);
-      d.scale.setScalar(0.8 + Math.random() * 1.0);
-      d.rotation.y = Math.random() * 6;
+      d.position.set(side * (TOTAL_W / 2 + 2.5 + Math.pow(Math.random(), 1.7) * b.spread), 0, (Math.random() - 0.5) * SEG_LEN);
+      d.scale.setScalar(b.ts[0] + Math.random() * b.ts[1]);
+      d.rotation.set(0, Math.random() * 6, 0);
       d.updateMatrix();
-      trunks.setMatrixAt(i, d.matrix);
-      foliage.setMatrixAt(i, d.matrix);
-      col.setHSL(0.24 + Math.random() * 0.12, 0.5, 0.22 + Math.random() * 0.14, THREE.SRGBColorSpace);
-      foliage.setColorAt(i, col);
+      u.trunks.setMatrixAt(i, d.matrix);
+      u.foliage.setMatrixAt(i, d.matrix);
+      col.setHSL(h0 + Math.random() * hr, sat, l0 + Math.random() * lr, SRGB);
+      u.foliage.setColorAt(i, col);
     }
-    trunks.instanceMatrix.needsUpdate = true;
-    foliage.instanceMatrix.needsUpdate = true;
-    foliage.instanceColor.needsUpdate = true;
+    u.trunks.instanceMatrix.needsUpdate = true;
+    u.foliage.instanceMatrix.needsUpdate = true;
+    u.foliage.instanceColor.needsUpdate = true;
+
+    // city buildings: 2 rows x 3 slots per side
+    u.bld.visible = b.bld > 0;
+    if (b.bld) {
+      u.bld.count = b.bld;
+      let i = 0;
+      for (const side of [-1, 1]) {
+        for (let row = 0; row < 2; row++) {
+          for (let k = 0; k < 3; k++) {
+            const w = 12 + Math.random() * 6 + row * 4, dd = 12 + Math.random() * 4 + row * 4, h = 22 + Math.random() * 40 + row * 12;
+            d.position.set(side * (TOTAL_W / 2 + 14 + w / 2 + row * 26), 0, (k - 1) * 20 + (Math.random() - 0.5) * 3);
+            d.scale.set(w, h, dd); d.rotation.set(0, 0, 0);
+            d.updateMatrix();
+            u.bld.setMatrixAt(i, d.matrix);
+            col.setHSL(0.58 + Math.random() * 0.06, 0.12 + Math.random() * 0.12, 0.7 + Math.random() * 0.25, SRGB);
+            u.bld.setColorAt(i, col);
+            i++;
+          }
+        }
+      }
+      u.bld.instanceMatrix.needsUpdate = true;
+      u.bld.instanceColor.needsUpdate = true;
+    }
+
+    // desert rocks
+    u.rock.visible = b.rock > 0;
+    if (b.rock) {
+      u.rock.count = b.rock;
+      for (let i = 0; i < b.rock; i++) {
+        const side = i % 2 ? 1 : -1, w = 5 + Math.random() * 8, h = 2 + Math.random() * 6;
+        d.position.set(side * (TOTAL_W / 2 + 12 + Math.random() * 90), h * 0.3, (Math.random() - 0.5) * SEG_LEN);
+        d.scale.set(w, h, 5 + Math.random() * 8); d.rotation.set(0, Math.random() * 3, 0);
+        d.updateMatrix();
+        u.rock.setMatrixAt(i, d.matrix);
+        col.setHSL(0.05 + Math.random() * 0.04, 0.45, 0.32 + Math.random() * 0.12, SRGB);
+        u.rock.setColorAt(i, col);
+      }
+      u.rock.instanceMatrix.needsUpdate = true;
+      u.rock.instanceColor.needsUpdate = true;
+    }
+
+    // overhead sign gantry every 6th segment
+    this._n++;
+    const showGantry = this._n % 6 === 0;
+    u.gantry.visible = showGantry;
+    if (showGantry) u.gantry.userData.board.material[4] = this.signMats[Math.floor(this._n / 6) % this.signMats.length];
   }
 
-  update(playerZ, camera) {
+  _flakes(camera, dt) {
+    const p = this.snowPos, cx = camera.position.x, cz = camera.position.z;
+    const wrap = (v, c, half, size) => c - half + ((((v - (c - half)) % size) + size) % size);
+    for (let i = 0; i < p.length; i += 3) {
+      p[i + 1] -= (4 + (i % 5)) * dt;
+      p[i] += Math.sin(this.tt * 0.8 + i) * 0.6 * dt;
+      if (p[i + 1] < 0) p[i + 1] += 18;
+      p[i] = wrap(p[i], cx, 22, 44);
+      p[i + 2] = wrap(p[i + 2], cz - 15, 35, 70);
+    }
+    this.snowAttr.needsUpdate = true;
+  }
+
+  update(playerZ, camera, dt = 0) {
     for (const s of this.segs) {
       if (s.position.z - playerZ > SEG_LEN * 2) {
         s.position.z -= SEG_LEN * SEG_COUNT;
@@ -192,6 +377,11 @@ export class World {
     this.sky.position.copy(camera.position);
     this.clouds.position.set(camera.position.x, 0, camera.position.z);
     this.stars.position.copy(camera.position);
+
+    this.tt += dt;
+    this.snowK += (this.snowTarget - this.snowK) * Math.min(1, dt * 1.5);
+    this.snow.visible = this.snowK > 0.02;
+    if (this.snow.visible) { this.snowMat.opacity = 0.9 * this.snowK; this._flakes(camera, dt); }
   }
 
   /** Time-of-day look (see tod.js). */
@@ -201,5 +391,6 @@ export class World {
     this.mountMat.color.setHex(p.mount);
     this.stars.material.opacity = p.stars;
     this.stars.visible = p.stars > 0;
+    this.bldMat.emissiveIntensity = p.glow > 1 ? (p.glow - 1) * 0.35 : 0; // lit windows at sunset / night
   }
 }

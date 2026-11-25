@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import './style.css';
-import { World, laneX, PLAYER_BOUND } from './world.js';
+import { World, laneX, PLAYER_BOUND, BIOME, BIOMES } from './world.js';
 import { spinWheels, setHeadGlow, CAR_W, CAR_L } from './car.js';
 import { CARS, COLORS, loadCar, quickCar } from './cars.js';
 import { Traffic } from './traffic.js';
+import { Pickups } from './pickups.js';
 import { Controls } from './controls.js';
 import { Hud } from './hud.js';
 import { Sfx } from './audio.js';
 import { Post } from './post.js';
 import { Particles } from './particles.js';
 import { TODS, TOD, TOD_ICONS, applyTOD } from './tod.js';
+import { MISSIONS, goalValue, goalTarget, goalLabel, fmtTime } from './modes.js';
+import { profile, save, addCoins, effStats } from './save.js';
+import { initMenu } from './menu.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -41,22 +45,30 @@ scene.add(hemi, sun, sun.target, head, head.target);
 
 // ------------------------------------------------------------------ state
 const saved = (() => { try { return JSON.parse(safeGet('hr3d-car') || 'null'); } catch { return null; } })();
+const P = profile();
 const S = {
   mode: 'menu', // menu | playing | over
   x: laneX(1), z: 0, speed: 0, vx: 0,
   psi: 0, slip: 0, drifting: false,
   nitro: 100, nitroLock: false, nK: 0,
   health: 100, score: 0, dist: 0, shake: 0, pitch: 0, orbit: 0,
-  best: Number(safeGet('hr3d-best') || 0),
+  // Stage 4: selected mode + per-run state
+  gm: ['endless', 'time', 'missions'].includes(P.sel.gm) ? P.sel.gm : 'endless', // endless | time | missions
+  missionIdx: clamp(Number(P.sel.mi) || 0, 0, MISSIONS.length - 1),
+  twoWay: !!P.sel.tw, // menu toggle (endless / time attack)
+  mission: null, tw: false, mul: 1, st: null, curBiome: 'highway', nextBiome: 2500, biomeIdx: 0,
+  runCoins: 0, overtakes: 0, combo: 0, comboT: 0, bestCombo: 0, oncMisses: 0, holdT: 0, elapsed: 0, timeLeft: 0, cpZ: -1000, cpCount: 0,
   carIdx: saved && CARS[saved.i] ? saved.i : 0,
   color: saved && Number.isFinite(saved.c) ? saved.c : CARS[saved && CARS[saved.i] ? saved.i : 0].color,
   tod: Math.max(0, TODS.indexOf(safeGet('hr3d-tod') || 'day')),
   quality: Number(safeGet('hr3d-q') ?? (MOBILE ? 1 : 2)),
 };
 let cur = TOD.day; // current time-of-day preset
+S.st = effStats(CARS[S.carIdx]); // catalog stats + shop upgrades
 
 const world = new World(scene);
-const traffic = new Traffic(scene, MOBILE ? 9 : 12);
+const traffic = new Traffic(scene, MOBILE ? 9 : 12, MOBILE ? 2 : 3, MOBILE ? 1 : 2);
+const pickups = new Pickups(scene);
 let player = quickCar(CARS[S.carIdx], S.color);
 scene.add(player);
 const controls = new Controls();
@@ -120,9 +132,10 @@ const saveCar = () => safeSet('hr3d-car', JSON.stringify({ i: S.carIdx, c: S.col
 const bar = (id, v) => { $(id).style.width = Math.round(clamp(v, 0, 1) * 100) + '%'; };
 
 function refreshGarage() {
-  const e = CARS[S.carIdx];
+  const e = CARS[S.carIdx], st = effStats(e);
+  S.st = st;
   $('carName').textContent = e.name.toUpperCase();
-  bar('bSpeed', e.stats.top / 70); bar('bAcc', e.stats.acc / 1.3); bar('bHnd', e.stats.hnd / 1.3);
+  bar('bSpeed', st.top / 80); bar('bAcc', st.acc / 1.3); bar('bHnd', st.hnd / 1.5);
   $('swatches').classList.toggle('hidden', e.recolor === false);
   [...$('swatches').children].forEach((b) => b.classList.toggle('on', Number(b.dataset.c) === S.color));
 }
@@ -143,6 +156,7 @@ $('nextCar').addEventListener('click', () => cycle(1));
 if (CARS.length < 2) { $('prevCar').classList.add('hidden'); $('nextCar').classList.add('hidden'); }
 refreshGarage();
 applyCar();
+const menu = initMenu(S, { cars: CARS, onUpgrade: () => refreshGarage() });
 
 // ------------------------------------------------------------------ UI helpers / flow
 const overlay = $('overlay');
@@ -160,48 +174,89 @@ function flash() {
 }
 
 function resetRun(mode) {
-  Object.assign(S, { mode, x: laneX(1), z: 0, speed: 0, vx: 0, psi: 0, slip: 0, drifting: false, nitro: 100, nitroLock: false, nK: 0, health: 100, score: 0, dist: 0, shake: 0, pitch: 0 });
-  world.reset();
+  Object.assign(S, {
+    mode, x: laneX(1), z: 0, speed: 0, vx: 0, psi: 0, slip: 0, drifting: false, nitro: 100, nitroLock: false, nK: 0, health: 100, score: 0, dist: 0, shake: 0, pitch: 0,
+    mission: null, tw: false, mul: 1, runCoins: 0, overtakes: 0, combo: 0, comboT: 0, bestCombo: 0, oncMisses: 0, holdT: 0, elapsed: 0,
+    timeLeft: 0, cpZ: -1000, cpCount: 0, nextBiome: 2500, biomeIdx: 0,
+  });
 }
 function enterMenu() {
   resetRun('menu');
+  world.reset('highway'); world.setTwoWay(false); world.setSnow(0);
+  pickups.reset(); pickups.group.visible = false;
   traffic.group.visible = false;
   overlay.classList.remove('over', 'hidden');
   $('title').textContent = 'HIGHWAY RACER 3D';
   $('msg').textContent = 'Brake + steer = drift.  Nitro: N2O button / Shift.';
-  $('garage').classList.remove('hidden');
+  $('menuBox').classList.remove('hidden');
   $('garageBtn').classList.add('hidden');
+  $('coinBal').classList.remove('hidden');
   $('start').textContent = 'START';
+  menu.refresh();
 }
 function startGame() {
+  const mission = S.gm === 'missions' ? MISSIONS[S.missionIdx] : null;
   resetRun('playing');
-  traffic.reset(S.z);
+  S.st = effStats(CARS[S.carIdx]);
+  S.mission = mission;
+  S.tw = mission ? mission.tw : (S.gm !== 'missions' && S.twoWay);
+  S.x = laneX(S.tw ? 2 : 1); // two-way road: start in a same-direction lane
+  S.curBiome = mission ? mission.biome : 'highway';
+  world.reset(S.curBiome); world.setTwoWay(S.tw); world.setSnow(S.curBiome === 'snow' ? 1 : 0);
+  traffic.setTwoWay(S.tw); traffic.setDifficulty(mission ? mission.diff : 0); traffic.reset(S.z);
   traffic.group.visible = true;
+  pickups.reset(); pickups.group.visible = true;
+  if (S.gm === 'time') { S.timeLeft = 60; world.setCheckpoint(S.cpZ); } else if (mission) S.timeLeft = mission.time;
   overlay.classList.add('hidden');
+  $('coinBal').classList.add('hidden');
   sfx.start();
   sfx.setMuted(sfx.muted); if (sfx.music) sfx.setMusic(true);
-  toast('GO!');
+  toast(mission ? mission.title : 'GO!');
 }
-function gameOver() {
+
+/** End of a run. reason: crash | time (time attack) | complete | fail (mission timed out). */
+function finish(reason) {
+  if (S.mode !== 'playing') return;
   S.mode = 'over';
   S.drifting = false;
   sfx.stop();
-  const score = Math.floor(S.score);
-  if (score > S.best) { S.best = score; safeSet('hr3d-best', String(score)); }
+  const score = Math.floor(S.score), m = S.mission;
+  let title = 'CRASHED', btn = 'RACE AGAIN';
+  let lines = [`Score ${score}`, `Distance ${(S.dist / 1000).toFixed(2)} km`, `Coins +${S.runCoins}`];
+  if (reason === 'time') title = 'TIME UP';
+  if (m) {
+    btn = 'RETRY';
+    lines = [m.title, goalLabel(m, S), `Coins +${S.runCoins}`];
+    if (reason === 'fail') title = 'TIME UP';
+    if (reason === 'complete') {
+      const reward = P.done[m.id] ? Math.floor(m.reward * 0.25) : m.reward; // replays pay 25%
+      P.done[m.id] = true; addCoins(reward);
+      title = 'MISSION COMPLETE';
+      lines = [m.title, `Reward +${reward} coins`, `Coins collected +${S.runCoins}`];
+      if (S.missionIdx < MISSIONS.length - 1) { S.missionIdx++; btn = 'NEXT MISSION'; } else btn = 'PLAY AGAIN';
+    }
+  } else {
+    const key = S.gm === 'time' ? 'time' : 'endless';
+    if (S.gm === 'time') lines.splice(2, 0, `Checkpoints ${S.cpCount}`);
+    if (score > P.best[key]) { P.best[key] = score; lines.push('NEW BEST!'); } else lines.push(`Best ${P.best[key]}`);
+  }
+  menu.persist(); // also saves best / done
   setTimeout(() => {
-    $('title').textContent = 'CRASHED';
-    $('msg').textContent = `Score ${score}\nDistance ${(S.dist / 1000).toFixed(2)} km\nBest ${S.best}`;
-    $('garage').classList.add('hidden');
+    $('title').textContent = title;
+    $('msg').textContent = lines.join('\n');
+    $('menuBox').classList.add('hidden');
     $('garageBtn').classList.remove('hidden');
-    $('start').textContent = 'RACE AGAIN';
+    $('coinBal').classList.remove('hidden');
+    $('start').textContent = btn;
+    menu.refresh();
     overlay.classList.add('over');
     overlay.classList.remove('hidden');
-  }, 900);
+  }, reason === 'crash' ? 900 : 400);
 }
 $('start').addEventListener('click', startGame);
 $('garageBtn').addEventListener('click', enterMenu);
 addEventListener('keydown', (e) => {
-  if (e.code === 'Enter' && !overlay.classList.contains('hidden')) startGame();
+  if (e.code === 'Enter' && !overlay.classList.contains('hidden') && $('shop').classList.contains('hidden')) startGame();
   if (e.code === 'KeyH' && S.mode === 'playing') sfx.horn();
 });
 
@@ -233,45 +288,105 @@ function crashBurst(x, z) {
 }
 
 // ------------------------------------------------------------------ gameplay
+function nearMiss(c) {
+  S.combo = (S.comboT > 0 ? S.combo : 0) + 1;
+  S.comboT = 4; // chain the next near miss within 4 s to keep the combo
+  S.bestCombo = Math.max(S.bestCombo, S.combo);
+  const pts = Math.round(100 * Math.min(3, 1 + (S.combo - 1) * 0.25) * (c.dir < 0 ? 2 : 1));
+  S.score += pts;
+  S.nitro = Math.min(100, S.nitro + 12);
+  if (c.dir < 0) S.oncMisses++;
+  toast(`${c.dir < 0 ? 'ONCOMING ' : ''}NEAR MISS +${pts}${S.combo > 1 ? '  x' + S.combo : ''}`);
+  sfx.blip();
+}
+
 function interactions() {
   for (const c of traffic.cars) {
+    if (!c.active || c.hit) continue;
     const dz = c.mesh.position.z - S.z;
     const dx = c.mesh.position.x - S.x;
-    if (c.hit) continue;
+    const halfL = (CAR_L + c.len) / 2, halfW = (CAR_W + c.wid) / 2;
 
-    if (Math.abs(dz) < CAR_L * 0.95 && Math.abs(dx) < CAR_W * 0.92) {
-      const rel = Math.max(0, S.speed - c.speed);
+    if (Math.abs(dz) < halfL * 0.95 && Math.abs(dx) < halfW * 0.92) {
+      const rel = Math.max(0, S.speed + (c.dir < 0 ? c.speed : -c.speed)); // closing speed
       const side = dx >= 0 ? 1 : -1;
       c.hit = true;
       c.vx = side * (5 + rel * 0.2);
       c.spinV = -side * (2 + Math.random() * 2);
-      S.health -= Math.min(40, 10 + rel * 0.9);
-      S.speed = Math.max(c.speed * 0.8, S.speed * 0.5);
+      S.health -= Math.min(45, (10 + rel * 0.9) * (c.type === 'car' ? 1 : 1.3));
+      S.speed = c.dir < 0 ? S.speed * 0.4 : Math.max(c.speed * 0.8, S.speed * 0.5);
       S.psi = -side * 0.25; S.slip = -side * 0.5;
       S.shake = 0.6;
+      S.combo = 0; S.comboT = 0;
       crashBurst(S.x + side * 0.9, S.z + dz * 0.5);
       flash(); sfx.crash();
-      if (S.health <= 0) { S.health = 0; gameOver(); return; }
+      if (S.health <= 0) { S.health = 0; finish('crash'); return; }
       continue;
     }
 
     if (Math.abs(dz) < 8) c.minDx = Math.min(c.minDx, Math.abs(dx));
-    if (!c.passed && dz > CAR_L) {
+    if (!c.passed && dz > halfL) {
       c.passed = true;
-      if (c.minDx < 2.9) {
-        S.score += 100;
-        S.nitro = Math.min(100, S.nitro + 12);
-        toast('NEAR MISS +100');
-        sfx.blip();
-      }
+      if (c.dir > 0) S.overtakes++;
+      if (c.minDx < halfW + 1.0) nearMiss(c);
     }
   }
 }
 
-let lastKmh = -1, lastScore = -1, lastDist = '', smokeT = 0, lineT = 0;
+function onPickup(kind) {
+  if (kind === 'coin') {
+    S.runCoins++; addCoins(1); S.score += 10; sfx.coin();
+    for (let i = 0; i < 4; i++) sparks.emit(S.x, 1.0, S.z - 1, rnd(-2, 2), rnd(1, 3), rnd(-2, 2), rnd(0.25, 0.4), 0.12, 4.5, 3.2, 0.6, 1);
+  } else {
+    S.health = Math.min(100, S.health + 25);
+    toast('REPAIR +25'); sfx.blip();
+  }
+}
+
+/** Mode rules, once per frame while playing: combo decay, biome rotation, checkpoints, mission goals, time limits. */
+function rules(dt) {
+  S.elapsed += dt;
+  if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }
+  S.mul = S.tw && S.x < 0 ? 2 : 1; // x2 score while driving on the oncoming side
+
+  if (!S.mission && S.dist >= S.nextBiome) { // endless / time attack: new scenery every 2.5 km
+    S.nextBiome += 2500;
+    S.biomeIdx = (S.biomeIdx + 1) % BIOMES.length;
+    world.setBiome(BIOMES[S.biomeIdx]);
+  }
+  const b = world.biomeUnder(S.z);
+  if (b !== S.curBiome) { S.curBiome = b; toast(BIOME[b].label); }
+  world.setSnow(b === 'snow' ? 1 : 0);
+
+  if (S.gm === 'time') {
+    S.timeLeft -= dt;
+    if (S.z <= S.cpZ) {
+      const bonus = Math.max(18, 30 - S.cpCount * 2);
+      S.timeLeft += bonus; S.cpCount++; S.score += 250;
+      S.cpZ -= 1000; world.setCheckpoint(S.cpZ);
+      toast(`CHECKPOINT +${bonus}s`); sfx.blip();
+    }
+    if (S.timeLeft <= 0) { S.timeLeft = 0; finish('time'); }
+  } else if (S.mission) {
+    const m = S.mission;
+    if (m.type === 'speed') S.holdT = S.speed * 3.6 >= m.target ? S.holdT + dt : 0;
+    S.timeLeft -= dt;
+    if (goalValue(m, S) >= goalTarget(m)) finish('complete');
+    else if (S.timeLeft <= 0) { S.timeLeft = 0; finish('fail'); }
+  }
+}
+
+function goalText() {
+  if (S.mode !== 'playing') return '';
+  if (S.gm === 'time') return `TIME ${fmtTime(S.timeLeft)}   \u00b7   CHECKPOINT ${Math.max(0, Math.round(S.z - S.cpZ))} m`;
+  if (S.mission) return `${S.mission.title}   \u00b7   ${goalLabel(S.mission, S)}   \u00b7   ${fmtTime(S.timeLeft)}`;
+  return '';
+}
+
+let lastKmh = -1, lastScore = -1, lastDist = '', smokeT = 0, lineT = 0, lastCoins = -1, lastGoal = '', lastMul = 0;
 function driveFrame(dt) {
   const live = S.mode === 'playing';
-  const st = CARS[S.carIdx].stats;
+  const st = S.st;
   const gas = live && controls.gas;
   const steer = live ? controls.steer : 0;
   const drifting = live && controls.brake && Math.abs(steer) > 0.45 && S.speed > 22;
@@ -280,10 +395,10 @@ function driveFrame(dt) {
   // --- nitro
   let nitroOn = live && controls.nitro && S.nitro > 0 && !S.nitroLock;
   if (nitroOn) {
-    S.nitro -= 38 * dt;
+    S.nitro -= 38 * (1 - 0.08 * st.nit) * dt;
     if (S.nitro <= 0) { S.nitro = 0; S.nitroLock = true; nitroOn = false; }
   } else {
-    S.nitro = Math.min(100, S.nitro + 5 * dt);
+    S.nitro = Math.min(100, S.nitro + 5 * (1 + 0.2 * st.nit) * dt);
     if (S.nitroLock && S.nitro >= 30) S.nitroLock = false;
   }
   if (drifting) S.nitro = Math.min(100, S.nitro + 8 * dt);
@@ -292,7 +407,7 @@ function driveFrame(dt) {
   // --- longitudinal
   let a = 0;
   if (gas) a += st.acc * (9 * (1 - S.speed / (st.top + 8)) + 3.5);
-  if (nitroOn) a += 15;
+  if (nitroOn) a += 15 * (1 + 0.05 * st.nit);
   if (brake) a -= drifting ? 9 : (live ? 32 : 26);
   a -= 2.2 + S.speed * S.speed * 0.0006;
   if (!nitroOn && S.speed > st.top + 2) a -= (S.speed - st.top - 2) * 2.5;
@@ -304,7 +419,7 @@ function driveFrame(dt) {
   S.psi += (psiT - S.psi) * Math.min(1, (drifting ? 3.5 : 6) * dt);
   S.slip += ((drifting ? steer * 0.5 : 0) - S.slip) * Math.min(1, 5 * dt);
   if (drifting && !S.drifting) toast('DRIFT!');
-  if (drifting) S.score += S.speed * dt * 0.3;
+  if (drifting) S.score += S.speed * dt * 0.3 * S.mul;
   S.drifting = drifting;
 
   S.vx = S.speed * Math.sin(S.psi);
@@ -317,11 +432,15 @@ function driveFrame(dt) {
   const fwd = S.speed * Math.cos(S.psi) * dt;
   S.z -= fwd;
   S.dist += fwd;
-  if (live) S.score += fwd * 0.1;
+  if (live) S.score += fwd * 0.1 * S.mul;
 
-  world.update(S.z, camera);
-  traffic.update(dt, S.z);
+  // difficulty ramp: traffic density, speed spread, trucks/buses and lane changes grow with distance (missions have a fixed floor)
+  traffic.setDifficulty(Math.max(clamp(S.dist / 9000, 0, 1), S.mission ? S.mission.diff : 0));
+  world.update(S.z, camera, dt);
+  traffic.update(dt, S.z, S.x);
   if (live) interactions();
+  pickups.update(dt, S.z, S.x, traffic, S.mode === 'playing', onPickup);
+  if (S.mode === 'playing') rules(dt);
 
   // --- visuals
   S.pitch += (clamp(a * 0.0016, -0.05, 0.05) - S.pitch) * Math.min(1, 6 * dt);
@@ -367,7 +486,7 @@ function driveFrame(dt) {
 function menuFrame(dt) {
   S.orbit += dt * 0.35;
   traffic.group.visible = false;
-  world.update(S.z, camera);
+  world.update(S.z, camera, dt);
   player.position.set(S.x, 0, S.z);
   player.rotation.set(0, 0, 0);
   for (const w of player.userData.steerers) w.rotation.y = Math.sin(S.orbit * 2) * 0.25;
@@ -391,6 +510,10 @@ function updateHud() {
   $('health').firstElementChild.style.transform = `scaleX(${S.health / 100})`;
   $('nitro').firstElementChild.style.transform = `scaleX(${S.nitro / 100})`;
   $('nitro').classList.toggle('locked', S.nitroLock);
+  if (S.runCoins !== lastCoins) { $('coins').textContent = '\u25ce ' + S.runCoins; lastCoins = S.runCoins; }
+  const g = goalText();
+  if (g !== lastGoal) { $('goal').textContent = g; lastGoal = g; }
+  if (S.mul !== lastMul) { $('mult').classList.toggle('show', S.mul > 1); lastMul = S.mul; }
 }
 
 let curFov = 0;

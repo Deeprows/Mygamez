@@ -3,6 +3,9 @@ import * as THREE from 'three';
 export const CAR_W = 1.9;
 export const CAR_L = 4.4;
 export const STYLE_KEYS = ['sport', 'muscle', 'hyper'];
+/** Vehicle footprints (metres) used for collisions + car-following. */
+export const VEH = { car: { len: CAR_L, wid: CAR_W }, truck: { len: 9, wid: 2.5 }, bus: { len: 10.8, wid: 2.5 } };
+export const IND_OFF = 0x2a1800, IND_ON = 0xff9a10; // turn-indicator colours
 
 // Body-style parameters. Front faces -Z, ground y = 0.
 const STYLES = {
@@ -58,7 +61,7 @@ function geos(style) {
  *   userData.steerers  front groups, rotated on Y for steering (may be empty)
  *   userData.tail      material whose .color is changed for brake lights
  */
-export function buildCar(color, { style = 'sport', spoiler = false } = {}) {
+export function buildCar(color, { style = 'sport', spoiler = false, indicators = false } = {}) {
   const P = STYLES[style] || STYLES.sport;
   const G = geos(STYLES[style] ? style : 'sport');
   const g = new THREE.Group();
@@ -110,6 +113,7 @@ export function buildCar(color, { style = 'sport', spoiler = false } = {}) {
     }
   }
   g.userData = { wheels, steerers, tail };
+  if (indicators) Object.assign(g.userData, addIndicators(g, 0.9, 2.2, P.bodyY + 0.05));
   return g;
 }
 
@@ -117,6 +121,90 @@ export function buildCar(color, { style = 'sport', spoiler = false } = {}) {
 export function setHeadGlow(k) { M.head.color.setHex(0xfff2c0).multiplyScalar(k); }
 
 export function spinWheels(car, distance) {
-  const a = distance / 0.36;
+  const a = distance / (car.userData.wr || 0.36);
   for (const w of car.userData.wheels) w.rotation.x -= a;
+}
+
+// ---------------------------------------------------------------- Stage 4: indicators, trucks, buses
+/** Four corner lamps sharing two materials (left / right). Traffic blinks them before a lane change. */
+function addIndicators(g, hw, hl, y) {
+  const geo = new THREE.BoxGeometry(0.22, 0.12, 0.06);
+  const indL = new THREE.MeshBasicMaterial({ color: IND_OFF }), indR = new THREE.MeshBasicMaterial({ color: IND_OFF });
+  for (const [sx, mat] of [[-1, indL], [1, indR]]) {
+    for (const sz of [-1, 1]) {
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(sx * hw, y, sz * hl);
+      g.add(m);
+    }
+  }
+  return { indL, indR };
+}
+
+const HW = {
+  tire: new THREE.CylinderGeometry(0.5, 0.5, 0.42, 18).rotateZ(Math.PI / 2),
+  spA: new THREE.BoxGeometry(0.43, 0.7, 0.09),
+  spB: new THREE.BoxGeometry(0.43, 0.09, 0.7),
+};
+/** spots: [x, z, isSteering]. Same wheel contract as buildCar (steer group > spin group). */
+function heavyWheels(g, spots) {
+  const wheels = [], steerers = [];
+  for (const [x, z, steer] of spots) {
+    const grp = new THREE.Group();
+    grp.position.set(x, 0.5, z);
+    const spin = new THREE.Group();
+    const tire = new THREE.Mesh(HW.tire, M.tire); tire.castShadow = true;
+    spin.add(tire, new THREE.Mesh(HW.spA, M.rim), new THREE.Mesh(HW.spB, M.rim));
+    grp.add(spin); g.add(grp);
+    wheels.push(spin);
+    if (steer) steerers.push(grp);
+  }
+  return { wheels, steerers };
+}
+function boxAdder(g) {
+  return (w, h, d, mat, x, y, z, cast = true) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z); m.castShadow = cast; g.add(m); return m;
+  };
+}
+
+/** Cab-over box truck, 9 m. Same userData contract as buildCar (+ wr = wheel radius, indL/indR). */
+export function buildTruck(color, cargoColor = 0xe9e9e9) {
+  const g = new THREE.Group(), add = boxAdder(g);
+  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.5, roughness: 0.4 });
+  const box = new THREE.MeshStandardMaterial({ color: cargoColor, roughness: 0.7 });
+  const tail = new THREE.MeshBasicMaterial({ color: 0xaa1010 });
+  add(2.2, 0.35, 8.8, M.dark, 0, 0.65, 0, false);          // chassis
+  add(2.4, 2.2, 2.3, paint, 0, 1.85, -3.3);                // cab
+  add(2.3, 0.85, 0.05, M.glass, 0, 2.4, -4.47, false);     // windshield
+  add(2.42, 0.7, 1.2, M.glass, 0, 2.4, -3.5, false);       // side windows
+  add(2.5, 2.9, 6.3, box, 0, 2.25, 1.35);                  // cargo box
+  add(2.4, 0.3, 0.15, M.dark, 0, 0.55, -4.5, false);       // bumper
+  for (const sx of [-1, 1]) {
+    add(0.5, 0.14, 0.06, tail, sx * 0.85, 0.95, 4.52, false);
+    add(0.45, 0.12, 0.06, M.head, sx * 0.85, 1.0, -4.5, false);
+  }
+  const { wheels, steerers } = heavyWheels(g, [[-1.12, -3.4, 1], [1.12, -3.4, 1], [-1.12, 2.4, 0], [1.12, 2.4, 0], [-1.12, 3.8, 0], [1.12, 3.8, 0]]);
+  g.userData = { wheels, steerers, tail, wr: 0.5, ...addIndicators(g, 1.15, 4.48, 1.1) };
+  return g;
+}
+
+/** City bus, 10.8 m. */
+export function buildBus(color) {
+  const g = new THREE.Group(), add = boxAdder(g);
+  const paint = new THREE.MeshStandardMaterial({ color, metalness: 0.4, roughness: 0.45 });
+  const tail = new THREE.MeshBasicMaterial({ color: 0xaa1010 });
+  add(2.3, 0.3, 10.5, M.dark, 0, 0.5, 0, false);           // underbody
+  add(2.5, 2.7, 10.8, paint, 0, 1.95, 0);                  // body
+  add(2.52, 0.25, 10.8, M.stripe, 0, 1.05, 0, false);      // white stripe
+  add(2.52, 0.9, 9.4, M.glass, 0, 2.6, 0.1, false);        // window band
+  add(2.3, 1.2, 0.05, M.glass, 0, 2.45, -5.41, false);     // windshield
+  add(2.3, 0.8, 0.05, M.glass, 0, 2.6, 5.41, false);       // rear window
+  add(1.4, 0.25, 2.6, M.stripe, 0, 3.42, 0.5, false);      // roof unit
+  for (const sx of [-1, 1]) {
+    add(0.5, 0.14, 0.06, tail, sx * 0.9, 0.9, 5.43, false);
+    add(0.45, 0.12, 0.06, M.head, sx * 0.9, 0.9, -5.43, false);
+  }
+  const { wheels, steerers } = heavyWheels(g, [[-1.12, -3.5, 1], [1.12, -3.5, 1], [-1.12, 3.4, 0], [1.12, 3.4, 0]]);
+  g.userData = { wheels, steerers, tail, wr: 0.5, ...addIndicators(g, 1.2, 5.4, 1.2) };
+  return g;
 }

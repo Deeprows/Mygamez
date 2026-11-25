@@ -2,6 +2,7 @@
 
 Endless 3D highway racer (Three.js + Vite). Dodge traffic, chain near misses, reach 220 km/h.
 Touch: drag the wheel, hold the right pedal. Keyboard: arrows/WASD, Space = brake.
+Modes: Endless, Time Attack, 10 Missions. Collect coins, buy upgrades in the SHOP, try the two-way road for x2 score.
 
 ## Run
 ```bash

@@ -14,10 +14,13 @@
     <div id="stats">
       <div id="score">0</div>
       <div id="dist">0.0 km</div>
+      <div id="coins">&#9678; 0</div>
+      <div id="mult">x2 ONCOMING</div>
       <div id="health"><i></i></div>
       <div id="nitro"><i></i></div>
     </div>
     <div id="toast"></div>
+    <div id="goal"></div>
 
     <div id="wheel">
       <svg viewBox="0 0 100 100">
@@ -46,9 +49,20 @@
     <button id="qualBtn" title="Graphics quality">HIGH</button>
   </div>
 
+  <div id="coinBal">&#9678; 0</div>
+
   <div id="overlay">
     <h1 id="title">HIGHWAY RACER 3D</h1>
     <p id="msg"></p>
+    <div id="menuBox">
+    <div id="modes" class="tabs"></div>
+    <div id="modeInfo"></div>
+    <div id="missionPick" class="carrow hidden">
+      <button id="prevM" class="arrow">&#8249;</button>
+      <div class="mcenter"><div id="missionName"></div><div id="missionDesc"></div></div>
+      <button id="nextM" class="arrow">&#8250;</button>
+    </div>
+    <button id="twoWayBtn" class="chip">TWO-WAY ROAD: OFF</button>
     <div id="garage">
       <div class="carrow"><button id="prevCar" class="arrow">&#8249;</button><div id="carName">STRIKER</div><button id="nextCar" class="arrow">&#8250;</button></div>
       <div class="bars">
@@ -58,10 +72,20 @@
       </div>
       <div id="swatches"></div>
     </div>
+    </div>
     <div class="row">
-      <button id="garageBtn" class="ghost hidden">GARAGE</button>
+      <button id="garageBtn" class="ghost hidden">MENU</button>
+      <button id="shopBtn" class="ghost">SHOP</button>
       <button id="start">START</button>
     </div>
+  </div>
+
+  <div id="shop" class="hidden">
+    <h1>UPGRADES</h1>
+    <div id="shopCar"></div>
+    <div id="shopCoins"></div>
+    <div id="shopRows"></div>
+    <button id="shopBack" class="ghost">BACK</button>
   </div>
 
   <script type="module" src="/src/main.js"></script>

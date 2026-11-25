@@ -92,6 +92,14 @@ export class Sfx {
     o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.2);
   }
 
+  coin() {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(1100, t); o.frequency.setValueAtTime(1650, t + 0.06);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.25);
+  }
+
   // ---- tiny synthwave loop (Am F C G, bass + arpeggio) ----
   _musicStart() {
     if (this.timer) return;
