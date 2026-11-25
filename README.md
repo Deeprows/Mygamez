@@ -25,3 +25,13 @@ Every push to `main` builds and publishes to `https://<YOUR_USER>.github.io/<YOU
 Track builds in the **Actions** tab.
 
 See **STAGES.md** for what is done, what is next, and a hand-off prompt for any other AI/platform.
+
+
+## Stage 5 — install, pause and native wrapper
+
+- The game can be installed as a PWA from a supported browser. The service worker caches the app shell and same-origin assets after they are first loaded online.
+- Use the **⛶** control to request fullscreen and landscape orientation. Support depends on the browser and device.
+- Press **P** or **Escape**, or tap **Ⅱ**, to pause. Hidden tabs auto-pause the race.
+- Use **SHARE SCORE** after a run. If the device does not offer a share sheet, the score text is copied when clipboard access is available.
+- The leaderboard stores local device records by default. To enable shared online scores, create a Supabase table named `scores` with columns `player_name` (text), `score` (int8), `mode` (text), `distance` (int8), `car` (text), and `created_at` (timestamptz, default now()). Configure public read/insert policies with suitable validation, then add the project URL and anon key to `public/leaderboard-config.js`. Never put a service-role key in the client.
+- Capacitor is configured for Android and iOS. After installing dependencies: `npx cap add android` or `npx cap add ios`, then `npm run build` and `npx cap sync`. Native builds still require their respective SDK toolchains.
