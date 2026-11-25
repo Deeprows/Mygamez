@@ -71,6 +71,7 @@ keyboard; engine + crash audio; start/game-over overlay; GitHub Pages CI.
 - NOT verified: this stage was written in an environment with no browser and no internet. Traffic AI, pickups, biome rotation and mission helpers were simulated headlessly (no overlaps, lane rules hold in two-way mode, pickups collected at 70 m/s frames), but the visuals (new truck/bus models, building windows, menu/shop layout on phones) have not been looked at. Expect small visual tweaks.
 
 ## STAGE 5 — IN PROGRESS: ship & platform support
+- **Menu redesign (5.1):** replaced the crowded single-screen menu with dedicated Home, Race Setup, Garage and Settings screens; Upgrades and Records open their existing dedicated views. Existing mode, mission, vehicle, paint, shop, leaderboard and settings logic is retained. The mobile layout now uses a restrained dark-metal / warm-metal accent theme with improved spacing and safe-area handling. Vehicle paint, glass and rim materials use refined physical shading. Needs visual testing on real phone sizes.
 - **PWA foundation added:** install manifest, app icon, service worker with offline shell + runtime asset caching. Browser installation/offline behavior still needs a real-device check.
 - **Immersive play added:** fullscreen request + landscape orientation lock from the in-game control. Browser/device support varies; native orientation must be checked after Capacitor platform generation.
 - **Pause system added:** pause/resume, restart current mode, return to menu; keyboard P / Escape and auto-pause when the tab is hidden.
