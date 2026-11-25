@@ -66,7 +66,11 @@ export class Traffic {
   _spawn(c, pz, initial) {
     let on;
     const density = [0.58, 0.82, 1][this.quality];
-    if (c.type === 'car') on = c.idx < Math.round(this.nCars * (0.6 + 0.4 * this.diff) * density);
+    if (initial) {
+      // A race must never open on an empty road: seed a visible pack immediately.
+      if (c.type === 'car') on = c.idx < Math.min(this.nCars, Math.max(5, Math.round(this.nCars * 0.68)));
+      else on = c.idx === 0; // one truck and one bus join the opening traffic pack
+    } else if (c.type === 'car') on = c.idx < Math.round(this.nCars * (0.6 + 0.4 * this.diff) * density);
     else if (c.type === 'truck') on = Math.random() < (0.25 + this.diff * 0.5) * density;
     else on = Math.random() < (0.15 + this.diff * 0.4) * density;
     if (!on) { this._off(c, pz); return; }
@@ -77,8 +81,8 @@ export class Traffic {
         if (c.type === 'car' && Math.random() < 0.5) { dir = -1; lane = pick(ONC); } else lane = pick(SAME2);
       } else lane = Math.floor(Math.random() * LANES);
       const z = dir > 0
-        ? pz - (initial ? 60 : 250) - Math.random() * (initial ? 520 : 260)
-        : pz - (initial ? 90 : 300) - Math.random() * (initial ? 500 : 400);
+        ? pz - (initial ? 65 : 250) - Math.random() * (initial ? 300 : 260)
+        : pz - (initial ? 85 : 300) - Math.random() * (initial ? 300 : 400);
       const free = this.cars.every((o) => o === c || !o.active || !this._occ(o, lane) || Math.abs(o.mesh.position.z - z) > 40 + (o.len + c.len) / 2);
       if (free) { this._place(c, lane, z, dir); return; }
     }
