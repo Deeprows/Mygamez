@@ -208,8 +208,8 @@ async function refreshLeaderboard() {
   const mode = $('leaderMode').value;
   const local = getLocalScores(mode);
   const remote = await fetchOnlineScores(mode);
-  const rows = remote.configured ? remote.rows : local;
-  $('leaderStatus').textContent = remote.configured ? 'Online leaderboard' : 'Device leaderboard · online service not configured';
+  const rows = remote.configured && remote.rows.length ? remote.rows : local;
+  $('leaderStatus').textContent = remote.configured ? (remote.rows.length ? 'Online leaderboard' : 'Online unavailable · showing device scores') : 'Device leaderboard · online service not configured';
   $('leaderRows').innerHTML = '';
   if (!rows.length) { $('leaderRows').innerHTML = '<li class="empty">No scores yet. Finish a race to set a record.</li>'; return; }
   for (const row of rows.slice(0, 10)) {
