@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Highway Racer 3D</title>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="ui">
+    <canvas id="speedo" width="260" height="260"></canvas>
+    <div id="stats">
+      <div id="score">0</div>
+      <div id="dist">0.0 km</div>
+      <div id="health"><i></i></div>
+    </div>
+    <div id="toast"></div>
+
+    <div id="wheel">
+      <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="44" fill="rgba(0,0,0,.25)"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#1b1b1b" stroke-width="12"/>
+        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/>
+        <path d="M50 50 L13 62 M50 50 L87 62 M50 50 L50 88" stroke="#1b1b1b" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="9" fill="#1b1b1b"/>
+        <rect x="47" y="8" width="6" height="10" rx="2" fill="#19b5ff"/>
+      </svg>
+    </div>
+
+    <div id="pedals">
+      <button id="brake" class="pedal" aria-label="Brake"></button>
+      <button id="gas" class="pedal" aria-label="Accelerator"></button>
+    </div>
+  </div>
+
+  <div id="flash"></div>
+
+  <div id="overlay">
+    <h1 id="title">HIGHWAY RACER 3D</h1>
+    <p id="msg">Dodge traffic. Chain near misses. Hit 220 km/h.
+Drag the wheel to steer, hold the right pedal to go.
+Keyboard: Arrow keys or WASD, Space to brake.</p>
+    <button id="start">START</button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
